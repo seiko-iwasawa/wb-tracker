@@ -84,6 +84,16 @@ class Button(ActiveObj):
         self.action()
 
 
+class Text(InactiveObj):
+    def __init__(
+        self, name: str, window: "Window", text: str, x: int, y: int, font: int
+    ):
+        super().__init__(name, window)
+        self.text = pyglet.text.Label(
+            text, x, y, font_size=font, color=(0, 0, 0), batch=window.batch
+        )
+
+
 class Window(pyglet.window.Window):
     def __init__(self, width: int, height: int, name: str) -> None:
         super().__init__(
