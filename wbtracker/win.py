@@ -135,6 +135,25 @@ class TextButton(ActiveObj):
         self.action()
 
 
+class Image(InactiveObj):
+    def __init__(
+        self,
+        name: str,
+        window: "Window",
+        x: int,
+        y: int,
+        filename: str,
+        width: int | None,
+        height: int | None,
+    ):
+        super().__init__(name, window)
+        self.img = pyglet.sprite.Sprite(
+            pyglet.image.load(filename), x, y, batch=window.batch
+        )
+        self.img.width = width or self.img.width
+        self.img.height = height or self.img.height
+
+
 class Window(pyglet.window.Window):
     def __init__(self, width: int, height: int, name: str) -> None:
         super().__init__(
