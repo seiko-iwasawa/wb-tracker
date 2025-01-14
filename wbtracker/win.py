@@ -94,6 +94,47 @@ class Text(InactiveObj):
         )
 
 
+class TextButton(ActiveObj):
+    def __init__(
+        self,
+        name: str,
+        window: "Window",
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        radius: int,
+        text: str,
+        font: int,
+        action: Callable,
+        *action_args,
+        **action_kwargs,
+    ):
+        super().__init__(name, window)
+        self.button_area = pyglet.shapes.RoundedRectangle(
+            x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
+        )
+        self.action = lambda: action(*action_args, **action_kwargs)
+        self.text = pyglet.text.Label(
+            text,
+            x,
+            y + height / 2 - font / 2,
+            0,
+            width,
+            height,
+            font_size=font,
+            color=(0, 0, 0),
+            align="center",
+            batch=window.batch,
+        )
+
+    def __contains__(self, coords: tuple[int, int]) -> bool:
+        return coords in self.button_area
+
+    def act(self) -> None:
+        self.action()
+
+
 class Window(pyglet.window.Window):
     def __init__(self, width: int, height: int, name: str) -> None:
         super().__init__(
