@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 
 import pyglet
 
@@ -55,6 +55,33 @@ class Background(InactiveObj):
         self.background = pyglet.shapes.Rectangle(
             0, 0, window.width, window.height, color, batch=window.batch
         )
+
+
+class Button(ActiveObj):
+    def __init__(
+        self,
+        name: str,
+        window: "Window",
+        x: int,
+        y: int,
+        width: int,
+        height: int,
+        radius: int,
+        action: Callable,
+        *action_args,
+        **action_kwargs,
+    ) -> None:
+        super().__init__(name, window)
+        self.button_area = pyglet.shapes.RoundedRectangle(
+            x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
+        )
+        self.action = lambda: action(*action_args, **action_kwargs)
+
+    def __contains__(self, coords: tuple[int, int]) -> bool:
+        return coords in self.button_area
+
+    def act(self) -> None:
+        self.action()
 
 
 class Window(pyglet.window.Window):
