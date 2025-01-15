@@ -61,81 +61,65 @@ class Background(InactiveObj):
 
 
 class Button(ActiveObj):
+
+    Area = pyglet.shapes.ShapeBase
+    RectArea = pyglet.shapes.Rectangle
+    RoundedArea = pyglet.shapes.RoundedRectangle
+    CircleArea = pyglet.shapes.Circle
+
     def __init__(
         self,
         name: str,
         window: "Window",
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        radius: int,
+        area: Area,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
         super().__init__(name, window)
-        self._button_area = pyglet.shapes.RoundedRectangle(
-            x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
-        )
+        area.batch = window.batch
+        self._area = area
         self._action = lambda: action(*action_args, **action_kwargs)
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
-        return coords in self._button_area
+        return coords in self._area
 
     def act(self) -> None:
         self._action()
 
 
 class Text(InactiveObj):
-    def __init__(
-        self, name: str, window: "Window", text: str, x: int, y: int, font: int
-    ) -> None:
+
+    Label = pyglet.text.Label
+
+    def __init__(self, name: str, window: "Window", text: Label) -> None:
         super().__init__(name, window)
-        self._text = pyglet.text.Label(
-            text, x, y, font_size=font, color=(0, 0, 0), batch=window.batch
-        )
+        text.batch = window.batch
+        self._text = text
 
 
-class TextButton(ActiveObj):
+class TextButton(Button):
     def __init__(
         self,
         name: str,
         window: "Window",
-        x: int,
-        y: int,
-        width: int,
-        height: int,
-        radius: int,
-        text: str,
-        font: int,
+        area: Button.Area,
+        text: Text.Label,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
-        super().__init__(name, window)
-        self._button_area = pyglet.shapes.RoundedRectangle(
-            x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
-        )
-        self._action = lambda: action(*action_args, **action_kwargs)
-        self._text = pyglet.text.Label(
-            text,
-            x,
-            y + height / 2 - font / 2,
-            0,
-            width,
-            height,
-            font_size=font,
-            color=(0, 0, 0),
-            align="center",
-            batch=window.batch,
-        )
-
-    def __contains__(self, coords: tuple[int, int]) -> bool:
-        return coords in self._button_area
-
-    def act(self) -> None:
-        self._action()
+        super().__init__(name, window, area, action, *action_args, **action_kwargs)
+        if isinstance(area, Button.RectArea | Button.RoundedArea):
+            text.x = area.x
+            text.y = area.y + area.height / 2 - text.font_size / 2
+            text.width = int(area.width)
+            text.height = int(area.height)
+            text.set_style("align", "center")
+        else:
+            raise NotImplemented("unknown area type")
+        text.batch = window.batch
+        self._text = text
 
 
 class Image(InactiveObj):

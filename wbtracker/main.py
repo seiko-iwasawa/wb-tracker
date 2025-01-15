@@ -14,13 +14,8 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-products",
                 self,
-                100,
-                600,
-                250,
-                50,
-                10,
-                "Добавить виды товаров",
-                14,
+                win.Button.RoundedArea(100, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Text.Label("Добавить виды товаров", color=(0, 0, 0), font_size=14),
                 self._add_products,
             )
         )
@@ -28,13 +23,8 @@ class MainWindow(win.Window):
             win.TextButton(
                 "record",
                 self,
-                400,
-                600,
-                250,
-                50,
-                10,
-                "Сделать запись",
-                14,
+                win.Button.RoundedArea(400, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Text.Label("Сделать запись", color=(0, 0, 0), font_size=14),
                 self._record,
             )
         )
@@ -42,13 +32,8 @@ class MainWindow(win.Window):
             win.TextButton(
                 "show-deltas",
                 self,
-                700,
-                600,
-                250,
-                50,
-                10,
-                "Проверить цены",
-                14,
+                win.Button.RoundedArea(700, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Text.Label("Проверить цены", color=(0, 0, 0), font_size=14),
                 self._show_deltas,
             )
         )
@@ -70,7 +55,11 @@ class MainWindow(win.Window):
             self.remove_obj("body")
             self.on_draw()
         cnt = 0
-        loading = win.Text("loading", self, "0/?", 100, 100, 14)
+        loading = win.Text(
+            "loading",
+            self,
+            win.Text.Label("0/?", 100, 100, color=(0, 0, 0), font_size=14),
+        )
         self.reg_obj(loading)
         self.on_draw()
         product_list = utils.read_product_list()
@@ -105,17 +94,41 @@ class MainWindow(win.Window):
                 old_price = top[i + start[0]][2][1]
                 top_obj.reg_obj(
                     win.Text(
-                        f"top-wb-{i}", self, f"{wb_article}", 100, 500 - 20 * i, 14
+                        f"top-wb-{i}",
+                        self,
+                        win.Text.Label(
+                            f"{wb_article}",
+                            100,
+                            500 - 20 * i,
+                            color=(0, 0, 0),
+                            font_size=14,
+                        ),
                     )
                 )
                 top_obj.reg_obj(
                     win.Text(
-                        f"top-cur-{i}", self, f"{cur_price}", 220, 500 - 20 * i, 14
+                        f"top-cur-{i}",
+                        self,
+                        win.Text.Label(
+                            f"{cur_price}",
+                            220,
+                            500 - 20 * i,
+                            color=(0, 0, 0),
+                            font_size=14,
+                        ),
                     )
                 )
                 top_obj.reg_obj(
                     win.Text(
-                        f"top-old-{i}", self, f"{old_price}", 300, 500 - 20 * i, 14
+                        f"top-old-{i}",
+                        self,
+                        win.Text.Label(
+                            f"{old_price}",
+                            300,
+                            500 - 20 * i,
+                            color=(0, 0, 0),
+                            font_size=14,
+                        ),
                     )
                 )
 
@@ -134,10 +147,22 @@ class MainWindow(win.Window):
         body = win.WinBlock("body", self)
         self.reg_obj(body)
         body.reg_obj(
-            win.TextButton("scroll-up", self, 1000, 400, 50, 50, 5, "up", 14, up)
+            win.TextButton(
+                "scroll-up",
+                self,
+                win.Button.RoundedArea(1000, 400, 50, 50, 5, color=(127, 127, 127)),
+                win.Text.Label("up", color=(0, 0, 0), font_size=14),
+                up,
+            )
         )
         body.reg_obj(
-            win.TextButton("scroll-down", self, 1000, 300, 50, 50, 5, "down", 14, down)
+            win.TextButton(
+                "scroll-down",
+                self,
+                win.Button.RoundedArea(1000, 300, 50, 50, 5, color=(127, 127, 127)),
+                win.Text.Label("down", color=(0, 0, 0), font_size=14),
+                down,
+            )
         )
         product_list = utils.read_product_list()
         top = []
