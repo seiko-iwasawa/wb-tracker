@@ -16,7 +16,7 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-up",
                 window,
-                win.Button.RoundedArea(1000, 400, 50, 50, 5, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(1000, 400, 50, 50, 5, color=(127, 127, 127)),
                 win.Text.Label("up", color=(0, 0, 0), font_size=14),
                 lambda: weak_self._up(),
             )
@@ -25,7 +25,7 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-down",
                 window,
-                win.Button.RoundedArea(1000, 300, 50, 50, 5, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(1000, 300, 50, 50, 5, color=(127, 127, 127)),
                 win.Text.Label("down", color=(0, 0, 0), font_size=14),
                 lambda: weak_self._down(),
             )
@@ -51,7 +51,7 @@ class WBTop(win.WinBlock):
                 win.TextButton(
                     f"url-{i}",
                     self.window,
-                    win.Button.RoundedArea(
+                    win.Shape.RoundedRectangle(
                         700, 500 - i * 40 - 7, 60, 30, 5, color=(127, 127, 127)
                     ),
                     win.Text.Label("open", color=(0, 0, 0), font_size=14),
@@ -83,7 +83,9 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-products",
                 self,
-                win.Button.RoundedArea(100, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(
+                    100, 600, 250, 50, 10, color=(127, 127, 127)
+                ),
                 win.Text.Label("Добавить виды товаров", color=(0, 0, 0), font_size=14),
                 utils.add_products,
             )
@@ -92,7 +94,9 @@ class MainWindow(win.Window):
             win.TextButton(
                 "record",
                 self,
-                win.Button.RoundedArea(400, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(
+                    400, 600, 250, 50, 10, color=(127, 127, 127)
+                ),
                 win.Text.Label("Сделать запись", color=(0, 0, 0), font_size=14),
                 self._record,
             )
@@ -101,7 +105,9 @@ class MainWindow(win.Window):
             win.TextButton(
                 "show-deltas",
                 self,
-                win.Button.RoundedArea(700, 600, 250, 50, 10, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(
+                    700, 600, 250, 50, 10, color=(127, 127, 127)
+                ),
                 win.Text.Label("Проверить цены", color=(0, 0, 0), font_size=14),
                 self._show_deltas,
             )

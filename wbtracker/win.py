@@ -56,37 +56,47 @@ class ActiveObj(WinObj, ABC):
 class InactiveObj(WinObj): ...
 
 
-class Background(InactiveObj):
+class Shape(InactiveObj):
+
+    Base = pyglet.shapes.ShapeBase
+    Line = pyglet.shapes.Line
+    Rectangle = pyglet.shapes.Rectangle
+    RoundedRectangle = pyglet.shapes.RoundedRectangle
+    Circle = pyglet.shapes.Circle
+
+    def __init__(self, name, window: "Window", shape: Base) -> None:
+        super().__init__(name, window)
+        shape.batch = window.batch
+        self._shape = shape
+
+
+class Background(Shape):
     def __init__(self, window: "Window", color: tuple[int, int, int]) -> None:
-        super().__init__("background", window)
-        self._background = pyglet.shapes.Rectangle(
-            0, 0, window.width, window.height, color, batch=window.batch
+        super().__init__(
+            "background",
+            window,
+            Shape.Rectangle(0, 0, window.width, window.height, color),
         )
 
 
 class Button(ActiveObj):
 
-    Area = pyglet.shapes.ShapeBase
-    RectArea = pyglet.shapes.Rectangle
-    RoundedArea = pyglet.shapes.RoundedRectangle
-    CircleArea = pyglet.shapes.Circle
-
     def __init__(
         self,
         name: str,
         window: "Window",
-        area: Area,
+        shape: Shape.Base,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
         super().__init__(name, window)
-        area.batch = window.batch
-        self._area = area
+        shape.batch = window.batch
+        self._shape = shape
         self._action = lambda: action(*action_args, **action_kwargs)
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
-        return coords in self._area
+        return coords in self._shape
 
     def act(self) -> None:
         self._action()
@@ -111,18 +121,18 @@ class TextButton(Button):
         self,
         name: str,
         window: "Window",
-        area: Button.Area,
+        shape: Shape.Base,
         text: Text.Label,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
-        super().__init__(name, window, area, action, *action_args, **action_kwargs)
-        if isinstance(area, Button.RectArea | Button.RoundedArea):
-            text.x = area.x
-            text.y = area.y + area.height / 2 - text.font_size / 2
-            text.width = int(area.width)
-            text.height = int(area.height)
+        super().__init__(name, window, shape, action, *action_args, **action_kwargs)
+        if isinstance(shape, Shape.Rectangle | Shape.RoundedRectangle):
+            text.x = shape.x
+            text.y = shape.y + shape.height / 2 - text.font_size / 2
+            text.width = int(shape.width)
+            text.height = int(shape.height)
             text.set_style("align", "center")
         else:
             raise NotImplemented("unknown area type")
