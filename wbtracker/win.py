@@ -55,7 +55,7 @@ class InactiveObj(WinObj): ...
 class Background(InactiveObj):
     def __init__(self, window: "Window", color: tuple[int, int, int]) -> None:
         super().__init__("background", window)
-        self.background = pyglet.shapes.Rectangle(
+        self._background = pyglet.shapes.Rectangle(
             0, 0, window.width, window.height, color, batch=window.batch
         )
 
@@ -75,24 +75,24 @@ class Button(ActiveObj):
         **action_kwargs,
     ) -> None:
         super().__init__(name, window)
-        self.button_area = pyglet.shapes.RoundedRectangle(
+        self._button_area = pyglet.shapes.RoundedRectangle(
             x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
         )
-        self.action = lambda: action(*action_args, **action_kwargs)
+        self._action = lambda: action(*action_args, **action_kwargs)
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
-        return coords in self.button_area
+        return coords in self._button_area
 
     def act(self) -> None:
-        self.action()
+        self._action()
 
 
 class Text(InactiveObj):
     def __init__(
         self, name: str, window: "Window", text: str, x: int, y: int, font: int
-    ):
+    ) -> None:
         super().__init__(name, window)
-        self.text = pyglet.text.Label(
+        self._text = pyglet.text.Label(
             text, x, y, font_size=font, color=(0, 0, 0), batch=window.batch
         )
 
@@ -112,13 +112,13 @@ class TextButton(ActiveObj):
         action: Callable,
         *action_args,
         **action_kwargs,
-    ):
+    ) -> None:
         super().__init__(name, window)
-        self.button_area = pyglet.shapes.RoundedRectangle(
+        self._button_area = pyglet.shapes.RoundedRectangle(
             x, y, width, height, radius, color=(127, 127, 127), batch=window.batch
         )
-        self.action = lambda: action(*action_args, **action_kwargs)
-        self.text = pyglet.text.Label(
+        self._action = lambda: action(*action_args, **action_kwargs)
+        self._text = pyglet.text.Label(
             text,
             x,
             y + height / 2 - font / 2,
@@ -132,10 +132,10 @@ class TextButton(ActiveObj):
         )
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
-        return coords in self.button_area
+        return coords in self._button_area
 
     def act(self) -> None:
-        self.action()
+        self._action()
 
 
 class Image(InactiveObj):
@@ -148,13 +148,13 @@ class Image(InactiveObj):
         filename: str,
         width: int | None,
         height: int | None,
-    ):
+    ) -> None:
         super().__init__(name, window)
-        self.img = pyglet.sprite.Sprite(
+        self._img = pyglet.sprite.Sprite(
             pyglet.image.load(filename), x, y, batch=window.batch
         )
-        self.img.width = width or self.img.width
-        self.img.height = height or self.img.height
+        self._img.width = width or self._img.width
+        self._img.height = height or self._img.height
 
 
 class Window(pyglet.window.Window):

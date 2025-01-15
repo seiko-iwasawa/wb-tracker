@@ -1,6 +1,6 @@
 import pathlib
-import sys
 import shutil
+import sys
 
 _home = pathlib.Path.home()
 """Home path."""
@@ -15,7 +15,7 @@ else:
 root = appdata / "WB Tracker"
 debug_root = pathlib.Path(".")
 
-DEBUG = True
+DEBUG = False
 
 if DEBUG:
     root = debug_root

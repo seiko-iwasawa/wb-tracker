@@ -1,27 +1,9 @@
 import datetime
-import json
 from tkinter.filedialog import askopenfile
-from typing import Any
 
-import appdata
-import requests
+import utils
 import win
 from pandas import read_excel
-
-
-def read_product_list() -> dict:
-    with open(appdata.root / "data" / "product-list.json", "r") as pl:
-        return json.load(pl)
-
-
-def write_product_list(product_list: Any) -> None:
-    with open(appdata.root / "data" / "product-list.json", "w") as pl:
-        json.dump(product_list, pl)
-
-
-def get_wb_price(article: str) -> int:
-    wb = requests.get(f"https://card.wb.ru/cards/v2/detail?dest=-1257786&nm={article}")
-    return wb.json()["data"]["products"][0]["sizes"][0]["price"]["total"] // 100
 
 
 class MainWindow(win.Window):
@@ -75,13 +57,13 @@ class MainWindow(win.Window):
         if not (file := askopenfile()):
             return
         for product in read_excel(file.name).values:
-            self._add_product(product[0], product[1])
+            self._add_product(product[0], str(product[1]))
 
     def _add_product(self, inner_article: str, wb_article: str) -> None:
-        product_list = read_product_list()
+        product_list = utils.read_product_list()
         if wb_article not in product_list:
             product_list[wb_article] = {"inner-article": inner_article, "history": {}}
-            write_product_list(product_list)
+            utils.write_product_list(product_list)
 
     def _record(self) -> None:
         if "body" in self:
@@ -91,19 +73,21 @@ class MainWindow(win.Window):
         loading = win.Text("loading", self, "0/?", 100, 100, 14)
         self.reg_obj(loading)
         self.on_draw()
-        product_list = read_product_list()
-        loading.text.text = f"0/{len(product_list)}"
+        product_list = utils.read_product_list()
+        loading._text.text = f"0/{len(product_list)}"
         self.on_draw()
         for wb_article, data in product_list.items():
             try:
                 print(wb_article)
-                data["history"][str(datetime.date.today())] = get_wb_price(wb_article)
+                data["history"][str(datetime.date.today())] = utils.get_wb_price(
+                    wb_article
+                )
             except Exception:
                 ...
             cnt += 1
-            loading.text.text = f"{cnt}/{len(product_list)}"
+            loading._text.text = f"{cnt}/{len(product_list)}"
             self.on_draw()
-        write_product_list(product_list)
+        utils.write_product_list(product_list)
         self.remove_obj("loading")
 
     def _show_deltas(self):
@@ -155,7 +139,7 @@ class MainWindow(win.Window):
         body.reg_obj(
             win.TextButton("scroll-down", self, 1000, 300, 50, 50, 5, "down", 14, down)
         )
-        product_list = read_product_list()
+        product_list = utils.read_product_list()
         top = []
         for wb_article, data in product_list.items():
             history = list(data["history"].items())
