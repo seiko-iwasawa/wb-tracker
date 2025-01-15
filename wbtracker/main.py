@@ -1,7 +1,73 @@
 import datetime
+import weakref
 
 import utils
 import win
+
+
+class WBTop(win.WinBlock):
+    def __init__(self, name: str, window: win.Window, top: list[list]) -> None:
+        super().__init__(name, window)
+        self._top = top
+        self._start = 0
+        self._build_table()
+        weak_self = weakref.ref(self)
+        self.reg_obj(
+            win.TextButton(
+                "scroll-up",
+                window,
+                win.Button.RoundedArea(1000, 400, 50, 50, 5, color=(127, 127, 127)),
+                win.Text.Label("up", color=(0, 0, 0), font_size=14),
+                lambda: weak_self()._up(),
+            )
+        )
+        self.reg_obj(
+            win.TextButton(
+                "scroll-down",
+                window,
+                win.Button.RoundedArea(1000, 300, 50, 50, 5, color=(127, 127, 127)),
+                win.Text.Label("down", color=(0, 0, 0), font_size=14),
+                lambda: weak_self()._down(),
+            )
+        )
+
+    def _build_table(self) -> None:
+        if "table" in self:
+            self.remove_obj("table")
+        table = win.WinBlock("table", self.window)
+        self.reg_obj(table)
+        for i, row in enumerate(self._top[self._start : self._start + 10]):
+            for j, val in enumerate([self._start + i + 1] + row):
+                table.reg_obj(
+                    win.Text(
+                        f"{i}-{j}",
+                        self.window,
+                        win.Text.Label(
+                            str(val), 100 + j * 100, 500 - i * 40, color=(0, 0, 0)
+                        ),
+                    )
+                )
+            table.reg_obj(
+                win.TextButton(
+                    f"url-{i}",
+                    self.window,
+                    win.Button.RoundedArea(
+                        700, 500 - i * 40 - 7, 60, 30, 5, color=(127, 127, 127)
+                    ),
+                    win.Text.Label("open", color=(0, 0, 0), font_size=14),
+                    action=lambda: None,
+                )
+            )
+
+    def _up(self) -> None:
+        if self._start > 0:
+            self._start -= 1
+            self._build_table()
+
+    def _down(self) -> None:
+        if self._start + 1 < len(self._top):
+            self._start += 1
+            self._build_table()
 
 
 class MainWindow(win.Window):
@@ -71,90 +137,10 @@ class MainWindow(win.Window):
         self.remove_obj("loading")
 
     def _show_deltas(self):
-
-        def draw_top():
-            if "top" in body:
-                body.remove_obj("top")
-            top_obj = win.WinBlock("top", self)
-            body.reg_obj(top_obj)
-            for i in range(10):
-                if i + start[0] >= len(top):
-                    break
-                wb_article = top[i + start[0]][0]
-                cur_price = top[i + start[0]][1][1]
-                old_price = top[i + start[0]][2][1]
-                top_obj.reg_obj(
-                    win.Text(
-                        f"top-wb-{i}",
-                        self,
-                        win.Text.Label(
-                            f"{wb_article}",
-                            100,
-                            500 - 20 * i,
-                            color=(0, 0, 0),
-                            font_size=14,
-                        ),
-                    )
-                )
-                top_obj.reg_obj(
-                    win.Text(
-                        f"top-cur-{i}",
-                        self,
-                        win.Text.Label(
-                            f"{cur_price}",
-                            220,
-                            500 - 20 * i,
-                            color=(0, 0, 0),
-                            font_size=14,
-                        ),
-                    )
-                )
-                top_obj.reg_obj(
-                    win.Text(
-                        f"top-old-{i}",
-                        self,
-                        win.Text.Label(
-                            f"{old_price}",
-                            300,
-                            500 - 20 * i,
-                            color=(0, 0, 0),
-                            font_size=14,
-                        ),
-                    )
-                )
-
-        def up():
-            if start[0] >= 0:
-                start[0] -= 1
-                draw_top()
-
-        def down():
-            if start[0] + 1 < len(top):
-                start[0] += 1
-                draw_top()
-
         if "body" in self:
             self.remove_obj("body")
         body = win.WinBlock("body", self)
         self.reg_obj(body)
-        body.reg_obj(
-            win.TextButton(
-                "scroll-up",
-                self,
-                win.Button.RoundedArea(1000, 400, 50, 50, 5, color=(127, 127, 127)),
-                win.Text.Label("up", color=(0, 0, 0), font_size=14),
-                up,
-            )
-        )
-        body.reg_obj(
-            win.TextButton(
-                "scroll-down",
-                self,
-                win.Button.RoundedArea(1000, 300, 50, 50, 5, color=(127, 127, 127)),
-                win.Text.Label("down", color=(0, 0, 0), font_size=14),
-                down,
-            )
-        )
         product_list = utils.read_product_list()
         top = []
         for wb_article, data in product_list.items():
@@ -163,11 +149,18 @@ class MainWindow(win.Window):
                 key=lambda x: datetime.datetime.strptime(x[0], "%Y-%m-%d"), reverse=True
             )
             if len(history) >= 2:
-                top.append([wb_article, history[0], history[1]])
-        top.sort(key=lambda x: abs(x[1][1] - x[2][1]))
-        start = [0]
+                top.append(
+                    [
+                        wb_article,
+                        history[0][0],
+                        history[0][1],
+                        history[1][0],
+                        history[1][1],
+                    ]
+                )
+        top.sort(key=lambda x: abs(x[2] - x[4]))
         print(len(top))
-        draw_top()
+        body.reg_obj(WBTop("top", self, top))
 
 
 def main():

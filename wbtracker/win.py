@@ -13,6 +13,10 @@ class WinObj:
     def name(self) -> str:
         return self._name
 
+    @property
+    def window(self) -> "Window":
+        return self._window
+
 
 class WinBlock(WinObj):
     def __init__(self, name: str, window: "Window") -> None:
@@ -96,7 +100,7 @@ class Text(InactiveObj):
         super().__init__(name, window)
         text.batch = window.batch
         self._text = text
-    
+
     @property
     def text(self):
         return self._text
