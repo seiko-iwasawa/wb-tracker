@@ -11,14 +11,14 @@ class WBTop(win.WinBlock):
         self._top = top
         self._start = 0
         self._build_table()
-        weak_self = weakref.ref(self)
+        weak_self: WBTop = weakref.proxy(self)
         self.reg_obj(
             win.TextButton(
                 "scroll-up",
                 window,
                 win.Button.RoundedArea(1000, 400, 50, 50, 5, color=(127, 127, 127)),
                 win.Text.Label("up", color=(0, 0, 0), font_size=14),
-                lambda: weak_self()._up(),
+                lambda: weak_self._up(),
             )
         )
         self.reg_obj(
@@ -27,7 +27,7 @@ class WBTop(win.WinBlock):
                 window,
                 win.Button.RoundedArea(1000, 300, 50, 50, 5, color=(127, 127, 127)),
                 win.Text.Label("down", color=(0, 0, 0), font_size=14),
-                lambda: weak_self()._down(),
+                lambda: weak_self._down(),
             )
         )
 
