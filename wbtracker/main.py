@@ -10,16 +10,21 @@ class MainWindow(win.Window):
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
         self.reg_obj(win.Background(self, (200, 200, 200)))
-        self.reg_obj(
+        self._reg_menu()
+
+    def _reg_menu(self) -> None:
+        menu = win.WinBlock("menu", self)
+        self.reg_obj(menu)
+        menu.reg_obj(
             win.TextButton(
                 "add-products",
                 self,
                 win.Button.RoundedArea(100, 600, 250, 50, 10, color=(127, 127, 127)),
                 win.Text.Label("Добавить виды товаров", color=(0, 0, 0), font_size=14),
-                self._add_products,
+                utils.add_products,
             )
         )
-        self.reg_obj(
+        menu.reg_obj(
             win.TextButton(
                 "record",
                 self,
@@ -28,7 +33,7 @@ class MainWindow(win.Window):
                 self._record,
             )
         )
-        self.reg_obj(
+        menu.reg_obj(
             win.TextButton(
                 "show-deltas",
                 self,
@@ -37,18 +42,6 @@ class MainWindow(win.Window):
                 self._show_deltas,
             )
         )
-
-    def _add_products(self) -> None:
-        if not (file := askopenfile()):
-            return
-        for product in read_excel(file.name).values:
-            self._add_product(product[0], str(product[1]))
-
-    def _add_product(self, inner_article: str, wb_article: str) -> None:
-        product_list = utils.read_product_list()
-        if wb_article not in product_list:
-            product_list[wb_article] = {"inner-article": inner_article, "history": {}}
-            utils.write_product_list(product_list)
 
     def _record(self) -> None:
         if "body" in self:
