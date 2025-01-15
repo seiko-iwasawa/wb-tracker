@@ -147,7 +147,9 @@ class Window(pyglet.window.Window):
             width,
             height,
             name,
-            config=pyglet.gl.Config(sample_buffers=1, samples=4),  # anti-aliasing
+            config=pyglet.gl.Config(  # type: ignore
+                sample_buffers=1, samples=4
+            ),  # anti-aliasing
         )
         self._batch = pyglet.graphics.Batch()
         self._objects = WinBlock("main", self)
