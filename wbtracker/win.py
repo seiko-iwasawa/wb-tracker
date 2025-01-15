@@ -22,6 +22,9 @@ class WinBlock(WinObj):
     def __getitem__(self, name: str) -> WinObj:
         return self._block[name]
 
+    def __contains__(self, name: str) -> bool:
+        return name in self._block
+
     def reg_obj(self, obj: WinObj) -> None:
         if obj.name in self._block:
             raise ValueError(f"name {obj.name} is already registered")
@@ -168,6 +171,9 @@ class Window(pyglet.window.Window):
     def __getitem__(self, name: str) -> WinObj:
         return self._objects[name]
 
+    def __contains__(self, name: str) -> bool:
+        return name in self._objects
+
     @property
     def batch(self) -> pyglet.graphics.Batch:
         return self._batch
@@ -181,7 +187,7 @@ class Window(pyglet.window.Window):
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         for obj in self._objects.all():
             if isinstance(obj, ActiveObj) and (x, y) in obj:
-                obj.act()
+                return obj.act()
 
     def on_draw(self) -> None:
         self.clear()
