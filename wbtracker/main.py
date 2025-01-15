@@ -1,9 +1,7 @@
 import datetime
-from tkinter.filedialog import askopenfile
 
 import utils
 import win
-from pandas import read_excel
 
 
 class MainWindow(win.Window):
@@ -56,7 +54,7 @@ class MainWindow(win.Window):
         self.reg_obj(loading)
         self.on_draw()
         product_list = utils.read_product_list()
-        loading._text.text = f"0/{len(product_list)}"
+        loading.text.text = f"0/{len(product_list)}"
         self.on_draw()
         for wb_article, data in product_list.items():
             try:
@@ -67,7 +65,7 @@ class MainWindow(win.Window):
             except Exception:
                 ...
             cnt += 1
-            loading._text.text = f"{cnt}/{len(product_list)}"
+            loading.text.text = f"{cnt}/{len(product_list)}"
             self.on_draw()
         utils.write_product_list(product_list)
         self.remove_obj("loading")

@@ -96,6 +96,10 @@ class Text(InactiveObj):
         super().__init__(name, window)
         text.batch = window.batch
         self._text = text
+    
+    @property
+    def text(self):
+        return self._text
 
 
 class TextButton(Button):
