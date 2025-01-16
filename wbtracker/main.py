@@ -16,9 +16,12 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-up",
                 window,
-                win.Shape.RoundedRectangle(800, 350, 40, 40, 5, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(800, 350, 40, 40, 5, color=(148, 0, 216)),
                 win.Text.Label(
-                    "↑", font_name="Times New Roman", color=(0, 0, 0), font_size=14
+                    "↑",
+                    font_name="Times New Roman",
+                    color=(255, 255, 255),
+                    font_size=14,
                 ),
                 lambda: weak_self._up(),
             )
@@ -27,9 +30,12 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-down",
                 window,
-                win.Shape.RoundedRectangle(800, 300, 40, 40, 5, color=(127, 127, 127)),
+                win.Shape.RoundedRectangle(800, 300, 40, 40, 5, color=(148, 0, 216)),
                 win.Text.Label(
-                    "↓", font_name="Times New Roman", color=(0, 0, 0), font_size=14
+                    "↓",
+                    font_name="Times New Roman",
+                    color=(255, 255, 255),
+                    font_size=14,
                 ),
                 lambda: weak_self._down(),
             )
@@ -52,7 +58,7 @@ class WBTop(win.WinBlock):
                             100,
                             40,
                             2,
-                            color=(127, 127, 127),
+                            color=(148, 0, 216),
                         ),
                     )
                 )
@@ -70,9 +76,9 @@ class WBTop(win.WinBlock):
                     f"url-{i}",
                     self.window,
                     win.Shape.RoundedRectangle(
-                        700, 500 - i * 40, 60, 30, 5, color=(127, 127, 127)
+                        700, 500 - i * 40, 60, 30, 5, color=(148, 0, 216)
                     ),
-                    win.Text.Label("open", color=(0, 0, 0), font_size=14),
+                    win.Text.Label("open", color=(255, 255, 255), font_size=14),
                     utils.webopen,
                     row[0],
                 )
@@ -92,7 +98,7 @@ class WBTop(win.WinBlock):
 class MainWindow(win.Window):
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
-        self.reg_obj(win.Background(self, (200, 200, 200)))
+        self.reg_obj(win.Background(self, (255, 255, 255)))
         self._reg_menu()
 
     def _reg_menu(self) -> None:
@@ -102,10 +108,10 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-products",
                 self,
-                win.Shape.RoundedRectangle(
-                    100, 600, 250, 50, 10, color=(127, 127, 127)
+                win.Shape.RoundedRectangle(100, 600, 250, 50, 10, color=(148, 0, 216)),
+                win.Text.Label(
+                    "Добавить виды товаров", color=(255, 255, 255), font_size=14
                 ),
-                win.Text.Label("Добавить виды товаров", color=(0, 0, 0), font_size=14),
                 utils.add_products,
             )
         )
@@ -113,10 +119,8 @@ class MainWindow(win.Window):
             win.TextButton(
                 "record",
                 self,
-                win.Shape.RoundedRectangle(
-                    400, 600, 250, 50, 10, color=(127, 127, 127)
-                ),
-                win.Text.Label("Сделать запись", color=(0, 0, 0), font_size=14),
+                win.Shape.RoundedRectangle(400, 600, 250, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Сделать запись", color=(255, 255, 255), font_size=14),
                 self._record,
             )
         )
@@ -124,10 +128,8 @@ class MainWindow(win.Window):
             win.TextButton(
                 "show-deltas",
                 self,
-                win.Shape.RoundedRectangle(
-                    700, 600, 250, 50, 10, color=(127, 127, 127)
-                ),
-                win.Text.Label("Проверить цены", color=(0, 0, 0), font_size=14),
+                win.Shape.RoundedRectangle(700, 600, 250, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Проверить цены", color=(255, 255, 255), font_size=14),
                 self._show_deltas,
             )
         )
