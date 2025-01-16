@@ -98,8 +98,3 @@ class Database:
         else:
             self._sales.append(sale)
         self.save()
-
-if __name__ == "__main__":
-    db = Database()
-    print(db._products[0]._name)
-    db.save()
