@@ -126,5 +126,17 @@ def add_wb_sales() -> Generator[str]:
         )
 
 
+def update_price() -> Generator[tuple[database.Database.Product, int]]:
+    db = database.Database()
+    for product in db._products:
+        yield product, get_price(product._store, product._id)
+
+
+def apply_price(product: database.Database.Product, new_price: int) -> None:
+    db = database.Database()
+    product._price = new_price
+    db.add_product(product)
+
+
 def webopen(article: str) -> None:
     webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")
