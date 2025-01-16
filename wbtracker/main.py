@@ -16,8 +16,10 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-up",
                 window,
-                win.Shape.RoundedRectangle(1000, 400, 50, 50, 5, color=(127, 127, 127)),
-                win.Text.Label("up", color=(0, 0, 0), font_size=14),
+                win.Shape.RoundedRectangle(800, 350, 40, 40, 5, color=(127, 127, 127)),
+                win.Text.Label(
+                    "↑", font_name="Times New Roman", color=(0, 0, 0), font_size=14
+                ),
                 lambda: weak_self._up(),
             )
         )
@@ -25,8 +27,10 @@ class WBTop(win.WinBlock):
             win.TextButton(
                 "scroll-down",
                 window,
-                win.Shape.RoundedRectangle(1000, 300, 50, 50, 5, color=(127, 127, 127)),
-                win.Text.Label("down", color=(0, 0, 0), font_size=14),
+                win.Shape.RoundedRectangle(800, 300, 40, 40, 5, color=(127, 127, 127)),
+                win.Text.Label(
+                    "↓", font_name="Times New Roman", color=(0, 0, 0), font_size=14
+                ),
                 lambda: weak_self._down(),
             )
         )
@@ -38,6 +42,20 @@ class WBTop(win.WinBlock):
         self.reg_obj(table)
         for i, row in enumerate(self._top[self._start : self._start + 10]):
             for j, val in enumerate([self._start + i + 1] + row):
+                table.reg_obj(
+                    win.Shape(
+                        f"box-{i}-{j}",
+                        self.window,
+                        win.Shape.Box(
+                            100 + j * 100 - 5,
+                            500 - 5 - i * 40,
+                            100,
+                            40,
+                            2,
+                            color=(127, 127, 127),
+                        ),
+                    )
+                )
                 table.reg_obj(
                     win.Text(
                         f"{i}-{j}",
@@ -52,10 +70,11 @@ class WBTop(win.WinBlock):
                     f"url-{i}",
                     self.window,
                     win.Shape.RoundedRectangle(
-                        700, 500 - i * 40 - 7, 60, 30, 5, color=(127, 127, 127)
+                        700, 500 - i * 40, 60, 30, 5, color=(127, 127, 127)
                     ),
                     win.Text.Label("open", color=(0, 0, 0), font_size=14),
-                    action=lambda: None,
+                    utils.webopen,
+                    row[0],
                 )
             )
 

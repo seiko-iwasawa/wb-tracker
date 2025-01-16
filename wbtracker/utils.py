@@ -1,4 +1,5 @@
 import json
+import webbrowser
 from collections.abc import Generator
 from tkinter.filedialog import askopenfile
 
@@ -39,3 +40,7 @@ def add_products() -> None:
 def get_wb_price(article: str) -> int:
     wb = requests.get(f"https://card.wb.ru/cards/v2/detail?dest=-1257786&nm={article}")
     return wb.json()["data"]["products"][0]["sizes"][0]["price"]["total"] // 100
+
+
+def webopen(article: str) -> None:
+    webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")

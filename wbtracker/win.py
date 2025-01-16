@@ -62,6 +62,7 @@ class Shape(InactiveObj):
     Line = pyglet.shapes.Line
     Rectangle = pyglet.shapes.Rectangle
     RoundedRectangle = pyglet.shapes.RoundedRectangle
+    Box = pyglet.shapes.Box
     Circle = pyglet.shapes.Circle
 
     def __init__(self, name, window: "Window", shape: Base) -> None:
