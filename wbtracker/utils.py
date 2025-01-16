@@ -43,13 +43,13 @@ def get_wb_card_url(art: int):
     ]
     for i in range(1, len(edges)):
         if edges[i - 1] <= vol and vol <= edges[i]:
-            host = f"basket-{i//10}{i%10}.wb.ru"
+            host = f"basket-{i//10}{i%10}.wbbasket.ru"
             url = f"https://{host}/vol{vol}/part{part}/{art}/info/ru/card.json"
             if requests.get(url).status_code // 100 == 2:
                 return url
     b = 1
     while b < 100:
-        host = f"basket-{b//10}{b%10}.wb.ru"
+        host = f"basket-{b//10}{b%10}.wbbasket.ru"
         url = f"https://{host}/vol{vol}/part{part}/{art}/info/ru/card.json"
         if requests.get(url).status_code // 100 == 2:
             return url
