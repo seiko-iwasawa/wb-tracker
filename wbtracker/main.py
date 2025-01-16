@@ -27,14 +27,29 @@ class MainWindow(win.Window):
                 self._add_products,
             )
         )
+        menu.reg_obj(
+            win.TextButton(
+                "add-sales",
+                self,
+                win.Shape.RoundedRectangle(350, 600, 200, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Добавить продажи", font_size=14),
+                self._add_wb_sales,
+            )
+        )
 
     def _info(self, text: str):
         self._output.text.text = text
         self.on_draw()
-    
+
     def _add_products(self):
         self._info("загрузка...")
         for id in utils.add_products():
+            self._info(id)
+        self._info("")
+
+    def _add_wb_sales(self):
+        self._info("загрузка...")
+        for id in utils.add_wb_sales():
             self._info(id)
         self._info("")
 

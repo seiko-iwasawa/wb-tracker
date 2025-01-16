@@ -14,6 +14,13 @@ def read_products() -> Generator[tuple[str, str, int]]:
         yield str(product[0]), str(product[1]), int(product[2])
 
 
+def read_wb_sales() -> Generator[tuple[str, str, int, str]]:
+    if not (file := askopenfile()):
+        return
+    for product in read_excel(file.name).values:
+        yield str(product[2]), str(product[4]), int(product[10]), str(product[12])
+
+
 def get_wb_card_url(art: int):
     vol = art // 10**5
     part = art // 10**3
@@ -100,6 +107,23 @@ def add_products() -> Generator[str]:
     for store, id, cost in read_products():
         yield id
         db.add_product(build_product(store, id, cost))
+
+
+def add_wb_sales() -> Generator[str]:
+    db = database.Database()
+    for sticker, date, price, id in read_wb_sales():
+        yield f"({date}) {id}"
+        db.add_sale(
+            database.Database.Sale(
+                {
+                    "store": "wb",
+                    "sticker": sticker,
+                    "id": id,
+                    "date": date,
+                    "price": price,
+                }
+            )
+        )
 
 
 def webopen(article: str) -> None:
