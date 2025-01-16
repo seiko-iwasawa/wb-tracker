@@ -1,22 +1,10 @@
-import json
 import webbrowser
 from collections.abc import Generator
 from tkinter.filedialog import askopenfile
 
-import appdata
 import database
 import requests
 from pandas import read_excel
-
-
-def read_product_list() -> dict:
-    with open(appdata.root / "data" / "product-list.json", "r") as pl:
-        return json.load(pl)
-
-
-def write_product_list(product_list: dict) -> None:
-    with open(appdata.root / "data" / "product-list.json", "w") as pl:
-        json.dump(product_list, pl)
 
 
 def read_products() -> Generator[tuple[str, str, int]]:
