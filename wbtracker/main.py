@@ -22,17 +22,21 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-products",
                 self,
-                win.Shape.RoundedRectangle(100, 600, 250, 50, 10, color=(148, 0, 216)),
-                win.Text.Label(
-                    "Добавить виды товаров", color=(255, 255, 255), font_size=14
-                ),
-                utils.add_products,
+                win.Shape.RoundedRectangle(100, 600, 200, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Добавить артикулы", font_size=14),
+                self._add_products,
             )
         )
 
     def _info(self, text: str):
         self._output.text.text = text
         self.on_draw()
+    
+    def _add_products(self):
+        self._info("загрузка...")
+        for id in utils.add_products():
+            self._info(id)
+        self._info("")
 
 
 def main():

@@ -95,10 +95,10 @@ def build_product(store: str, id: str, cost: int) -> database.Database.Product:
     )
 
 
-def add_products() -> None:
+def add_products() -> Generator[str]:
     db = database.Database()
     for store, id, cost in read_products():
-        print(id)
+        yield id
         db.add_product(build_product(store, id, cost))
 
 
