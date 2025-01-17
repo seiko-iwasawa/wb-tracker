@@ -213,6 +213,7 @@ def download_products() -> str:
             product._price,
             product._cost,
         ]
+    df.sort_values(by="price", ascending=False, inplace=True)
     filename = "products.xlsx"
     n = 1
     while (download_folder() / filename).exists():
@@ -227,11 +228,12 @@ def download_products() -> str:
 def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     db = database.Database()
     df = pd.DataFrame(
-        columns=["store", "id", "vendor_code", "brand", "name", "n", "sum"]
+        columns=["store", "id", "vendor_code", "brand", "name", "n", "sum", "profit"]
     )
     for i, product in enumerate(db._products):
         n = 0
         sp = 0
+        pr = 0
         for sale in db._sales:
             if (sale._store, sale._id) != (product._store, product._id):
                 continue
@@ -246,6 +248,7 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
             ):
                 n += 1
                 sp += sale._price
+                pr += sale._price - product._cost
         df.loc[i + 1] = [
             product._store,
             product._id,
@@ -254,7 +257,9 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
             product._name,
             n,
             sp,
+            pr,
         ]
+    df.sort_values("n", ascending=False, inplace=True)
     filename = "sales.xlsx"
     n = 1
     while (download_folder() / filename).exists():
