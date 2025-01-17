@@ -141,17 +141,20 @@ def add_wb_sales() -> Generator[str]:
         )
 
 
-def update_price() -> Generator[tuple[database.Database.Product, int]]:
+def update_price() -> Generator[tuple[database.Database.Product, int, str]]:
 
     def f(product: database.Database.Product):
+        nonlocal cnt
         new_price = get_price(product._store, product._id)
         with lock:
-            res.append((product, new_price))
+            cnt += 1
+            res.append((product, new_price, f"{int(100 * cnt // len(db._products))}%"))
 
     db = database.Database()
+    cnt = 0
     for s in range(0, len(db._products), 10):
         threads: list[threading.Thread] = []
-        res: list[tuple[database.Database.Product, int]] = []
+        res: list[tuple[database.Database.Product, int, str]] = []
         lock = threading.Lock()
         for product in db._products[s : s + 10]:
             thread = threading.Thread(target=f, args=(product,))

@@ -49,8 +49,10 @@ class PriceUpdater(win.WinBlock):
         if "table" in self:
             self.remove_obj("table")
         self._prices.sort(
-            key=lambda elem: abs(elem[0]._price - elem[1])
-            / max(elem[0]._price, elem[1]),
+            key=lambda elem: (
+                abs(elem[0]._price - elem[1]) / max(elem[0]._price, elem[1]),
+                max(elem[0]._price, elem[1]),
+            ),
             reverse=True,
         )
         table = win.WinBlock("table", self.window)
@@ -100,7 +102,10 @@ class PriceUpdater(win.WinBlock):
                     f"{i}-1",
                     self.window,
                     win.Text.Label(
-                        str(elem[0]._price), 200, 500 - i * 40, color=(0, 0, 0)
+                        str(elem[0]._price) if elem[0]._price != -1 else "-",
+                        200,
+                        500 - i * 40,
+                        color=(0, 0, 0),
                     ),
                 )
             )
@@ -123,7 +128,12 @@ class PriceUpdater(win.WinBlock):
                 win.Text(
                     f"{i}-2",
                     self.window,
-                    win.Text.Label(str(elem[1]), 300, 500 - i * 40, color=(0, 0, 0)),
+                    win.Text.Label(
+                        str(elem[1]) if elem[1] != -1 else "-",
+                        300,
+                        500 - i * 40,
+                        color=(0, 0, 0),
+                    ),
                 )
             )
             # 3
@@ -294,11 +304,11 @@ class MainWindow(win.Window):
         self._clear_body()
         self._info("загрузка...")
         prices: list[tuple[database.Database.Product, int]] = []
-        for product, new_price in utils.update_price():
-            self._info(product._id)
+        for product, new_price, info in utils.update_price():
+            self._info(info)
             prices.append((product, new_price))
         self.reg_obj(PriceUpdater(self, prices))
-        self._info("")
+        self._info("загрузка цен завершена")
 
 
 def main():
