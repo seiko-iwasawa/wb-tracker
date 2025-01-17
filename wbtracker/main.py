@@ -1,5 +1,7 @@
+import calendar
 import datetime
 import weakref
+from collections.abc import Callable
 
 import database
 import utils
@@ -256,6 +258,114 @@ class PriceUpdater(win.WinBlock):
         self._build_table()
 
 
+class PeriodChooser(win.WinBlock):
+
+    def __init__(self, window: win.Window, action: Callable) -> None:
+        super().__init__("body", window)
+        weak_self = weakref.proxy(self)
+        self._year = 2025
+        self._month = 1
+        self._months = [
+            "Январь",
+            "Февраль",
+            "Март",
+            "Апрель",
+            "Май",
+            "Июнь",
+            "Июль",
+            "Август",
+            "Сентябрь",
+            "Октябрь",
+            "Ноябрь",
+            "Декабрь",
+        ]
+        self._year_label = win.Text(
+            "year",
+            window,
+            win.Text.Label(
+                str(self._year),
+                340,
+                310,
+                0,
+                160,
+                100,
+                align="center",
+                color=(0, 0, 0),
+                font_size=14,
+            ),
+        )
+        self._month_label = win.Text(
+            "month",
+            window,
+            win.Text.Label(
+                self._months[self._month - 1],
+                340,
+                210,
+                0,
+                160,
+                100,
+                align="center",
+                color=(0, 0, 0),
+                font_size=14,
+            ),
+        )
+        self.reg_obj(self._year_label)
+        self.reg_obj(self._month_label)
+        self.reg_obj(
+            win.TextButton(
+                "OK",
+                window,
+                win.Shape.RoundedRectangle(400, 400, 40, 40, 5, color=(148, 0, 216)),
+                win.Text.Label("OK", font_size=14),
+                action,
+            )
+        )
+        self.reg_obj(
+            win.TextButton(
+                "year-down",
+                window,
+                win.Shape.RoundedRectangle(300, 300, 40, 40, 5, color=(148, 0, 216)),
+                win.Text.Label("<", font_size=14),
+                lambda: weak_self._year_shift(-1),
+            )
+        )
+        self.reg_obj(
+            win.TextButton(
+                "year-up",
+                window,
+                win.Shape.RoundedRectangle(500, 300, 40, 40, 5, color=(148, 0, 216)),
+                win.Text.Label(">", font_size=14),
+                lambda: weak_self._year_shift(+1),
+            )
+        )
+        self.reg_obj(
+            win.TextButton(
+                "month-down",
+                window,
+                win.Shape.RoundedRectangle(300, 200, 40, 40, 5, color=(148, 0, 216)),
+                win.Text.Label("<", font_size=14),
+                lambda: weak_self._month_shift(-1),
+            )
+        )
+        self.reg_obj(
+            win.TextButton(
+                "month-up",
+                window,
+                win.Shape.RoundedRectangle(500, 200, 40, 40, 5, color=(148, 0, 216)),
+                win.Text.Label(">", font_size=14),
+                lambda: weak_self._month_shift(+1),
+            )
+        )
+
+    def _year_shift(self, delta: int):
+        self._year += delta
+        self._year_label.text.text = str(self._year)
+
+    def _month_shift(self, delta: int):
+        self._month = (self._month + delta - 1) % 12 + 1
+        self._month_label.text.text = self._months[self._month - 1]
+
+
 class MainWindow(win.Window):
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
@@ -372,9 +482,17 @@ class MainWindow(win.Window):
 
     def _download_sales(self):
         self._clear_body()
+        self.reg_obj(PeriodChooser(self, self._download_sales_for_period))
+
+    def _download_sales_for_period(self):
+        assert isinstance(period := self["body"], PeriodChooser)
+        year, month = period._year, period._month
+        self._clear_body()
         self._info("выгрузка...")
-        end = datetime.datetime.now()
-        start = end - datetime.timedelta(days=31)
+        start = datetime.datetime(year, month, 1)
+        end = start + datetime.timedelta(
+            days=calendar.monthrange(year, month)[1], seconds=-1
+        )
         file = utils.download_sales(start, end)
         self._info(f"выгрузка товаров завершена ({file})")
         utils.appopen(file)
