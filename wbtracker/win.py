@@ -203,4 +203,4 @@ class Window(pyglet.window.Window):
         pyglet.app.run(1 / 30)
 
     def exit(self) -> None:
-        pyglet.app.exit()
+        self.close()
