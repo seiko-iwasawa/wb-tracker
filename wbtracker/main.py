@@ -205,7 +205,7 @@ class PriceUpdater(win.WinBlock):
                         win.Text.Label("ПРИНЯТЬ", color=(255, 255, 255), font_size=14),
                         utils.apply_price,
                         elem[0],
-                        elem[1]
+                        elem[1],
                     )
                 )
 
@@ -280,15 +280,15 @@ class MainWindow(win.Window):
 
     def _add_products(self):
         self._info("загрузка...")
-        for id in utils.add_products():
-            self._info(id)
-        self._info("")
+        for info in utils.add_products():
+            self._info(info)
+        self._info("загрузка артикулов завершена")
 
     def _add_wb_sales(self):
         self._info("загрузка...")
         for id in utils.add_wb_sales():
             self._info(id)
-        self._info("")
+        self._info("загрузка продаж завершена")
 
     def _update_price(self):
         self._clear_body()

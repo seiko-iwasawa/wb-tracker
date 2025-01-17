@@ -1,3 +1,4 @@
+import threading
 import webbrowser
 from collections.abc import Generator
 from tkinter.filedialog import askopenfile
@@ -103,10 +104,24 @@ def build_product(store: str, id: str, cost: int) -> database.Database.Product:
 
 
 def add_products() -> Generator[str]:
+
+    def add_product(store: str, id: str, cost: int):
+        product = build_product(store, id, cost)
+        with lock:
+            db.add_product(product)
+
     db = database.Database()
-    for store, id, cost in read_products():
-        yield id
-        db.add_product(build_product(store, id, cost))
+    products = list(read_products())
+    lock = threading.Lock()
+    for s in range(0, len(products), 10):
+        yield f"{int(100 * s // len(products))}%"
+        threads: list[threading.Thread] = []
+        for store, id, cost in products[s : s + 10]:
+            thread = threading.Thread(target=add_product, args=(store, id, cost))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
 
 
 def add_wb_sales() -> Generator[str]:
@@ -127,9 +142,24 @@ def add_wb_sales() -> Generator[str]:
 
 
 def update_price() -> Generator[tuple[database.Database.Product, int]]:
+
+    def f(product: database.Database.Product):
+        new_price = get_price(product._store, product._id)
+        with lock:
+            res.append((product, new_price))
+
     db = database.Database()
-    for product in db._products:
-        yield product, get_price(product._store, product._id)
+    for s in range(0, len(db._products), 10):
+        threads: list[threading.Thread] = []
+        res: list[tuple[database.Database.Product, int]] = []
+        lock = threading.Lock()
+        for product in db._products[s : s + 10]:
+            thread = threading.Thread(target=f, args=(product,))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
+        yield from res
 
 
 def apply_price(product: database.Database.Product, new_price: int) -> None:
