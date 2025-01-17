@@ -1,24 +1,27 @@
+import datetime
 import threading
 import webbrowser
 from collections.abc import Generator
+from pathlib import Path
 from tkinter.filedialog import askopenfile
 
 import database
+import opener
+import pandas as pd
 import requests
-from pandas import read_excel
 
 
 def read_products() -> Generator[tuple[str, str, int]]:
     if not (file := askopenfile()):
         return
-    for product in read_excel(file.name).values:
+    for product in pd.read_excel(file.name).values:
         yield str(product[0]), str(product[1]), int(product[2])
 
 
 def read_wb_sales() -> Generator[tuple[str, str, int, str]]:
     if not (file := askopenfile()):
         return
-    for product in read_excel(file.name).values:
+    for product in pd.read_excel(file.name).values:
         yield str(product[2]), str(product[4]), int(product[10]), str(product[12])
 
 
@@ -173,3 +176,66 @@ def apply_price(product: database.Database.Product, new_price: int) -> None:
 
 def webopen(article: str) -> None:
     webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")
+
+
+def appopen(filename: str) -> None:
+    opener.subprocess_opener(f"'{filename}'")
+
+
+def download_folder() -> Path:
+    return Path.home() / "Downloads"
+
+
+def download_products() -> str:
+    db = database.Database()
+    df = pd.DataFrame(columns=["store", "id", "vendor_code", "name", "price", "cost"])
+    for i, product in enumerate(db._products):
+        df.loc[i + 1] = [
+            product._store,
+            product._id,
+            product._vendor_code,
+            product._name,
+            product._price,
+            product._cost,
+        ]
+    filename = "products.xlsx"
+    n = 1
+    while (download_folder() / filename).exists():
+        n += 1
+        filename = f"products ({n}).xlsx"
+    df.to_excel((download_folder() / filename))
+    return str(download_folder() / filename)
+
+
+def download_sales() -> str:
+    db = database.Database()
+    df = pd.DataFrame(columns=["store", "id", "vendor_code", "name", "all", "month"])
+    for i, product in enumerate(db._products):
+        all_time = 0
+        month = 0
+        for sale in db._sales:
+            print(sale._store, sale._id, product._store, product._id)
+            if (sale._store, sale._id) != (product._store, product._id):
+                continue
+            all_time += sale._price
+            delta = (
+                datetime.datetime.strptime(sale._date, "%H:%M:%S %d.%m.%Y")
+                - datetime.datetime.now()
+            )
+            if delta < datetime.timedelta(days=31):
+                month += sale._price
+        df.loc[i + 1] = [
+            product._store,
+            product._id,
+            product._vendor_code,
+            product._name,
+            all_time,
+            month,
+        ]
+    filename = "sales.xlsx"
+    n = 1
+    while (download_folder() / filename).exists():
+        n += 1
+        filename = f"sales ({n}).xlsx"
+    df.to_excel((download_folder() / filename))
+    return str(download_folder() / filename)

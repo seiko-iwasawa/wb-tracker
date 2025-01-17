@@ -44,6 +44,19 @@ class PriceUpdater(win.WinBlock):
                 lambda: weak_self._down(),
             )
         )
+        self.reg_obj(
+            win.TextButton(
+                "apply-all",
+                window,
+                win.Shape.RoundedRectangle(700, 450, 200, 40, 5, color=(148, 0, 216)),
+                win.Text.Label(
+                    "ПРИНЯТЬ ВСЕ",
+                    color=(255, 255, 255),
+                    font_size=14,
+                ),
+                lambda: weak_self._apply_all(),
+            )
+        )
 
     def _build_table(self) -> None:
         if "table" in self:
@@ -236,6 +249,12 @@ class PriceUpdater(win.WinBlock):
         utils.apply_price(product, new_price)
         self._build_table()
 
+    def _apply_all(self):
+        for elem in self._prices:
+            if elem[0]._price != elem[1]:
+                utils.apply_price(elem[0], elem[1])
+        self._build_table()
+
 
 class MainWindow(win.Window):
     def __init__(self) -> None:
@@ -254,7 +273,7 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-products",
                 self,
-                win.Shape.RoundedRectangle(100, 600, 200, 50, 10, color=(148, 0, 216)),
+                win.Shape.RoundedRectangle(100, 650, 200, 50, 10, color=(148, 0, 216)),
                 win.Text.Label("Добавить артикулы", font_size=14),
                 self._add_products,
             )
@@ -263,7 +282,7 @@ class MainWindow(win.Window):
             win.TextButton(
                 "add-sales",
                 self,
-                win.Shape.RoundedRectangle(350, 600, 200, 50, 10, color=(148, 0, 216)),
+                win.Shape.RoundedRectangle(350, 650, 200, 50, 10, color=(148, 0, 216)),
                 win.Text.Label("Добавить продажи", font_size=14),
                 self._add_wb_sales,
             )
@@ -272,7 +291,7 @@ class MainWindow(win.Window):
             win.TextButton(
                 "update-price",
                 self,
-                win.Shape.RoundedRectangle(600, 600, 200, 50, 10, color=(148, 0, 216)),
+                win.Shape.RoundedRectangle(600, 650, 200, 50, 10, color=(148, 0, 216)),
                 win.Text.Label("Обновить цены", font_size=14),
                 self._update_price,
             )
@@ -281,9 +300,36 @@ class MainWindow(win.Window):
             win.TextButton(
                 "clear-body",
                 self,
-                win.Shape.RoundedRectangle(850, 600, 50, 50, 10, color=(148, 0, 216)),
+                win.Shape.RoundedRectangle(850, 650, 50, 50, 10, color=(148, 0, 216)),
                 win.Text.Label("X", font_size=14),
                 self._clear_body,
+            )
+        )
+        menu.reg_obj(
+            win.TextButton(
+                "download-products",
+                self,
+                win.Shape.RoundedRectangle(100, 570, 200, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Выгрузить товары", font_size=14),
+                self._download_products,
+            )
+        )
+        menu.reg_obj(
+            win.TextButton(
+                "download-sales",
+                self,
+                win.Shape.RoundedRectangle(350, 570, 200, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Выгрузить продажи", font_size=14),
+                self._download_sales,
+            )
+        )
+        menu.reg_obj(
+            win.TextButton(
+                "analyze-sales",
+                self,
+                win.Shape.RoundedRectangle(600, 570, 200, 50, 10, color=(148, 0, 216)),
+                win.Text.Label("Анализ продаж", font_size=14),
+                self._analyze_sales,
             )
         )
 
@@ -316,6 +362,22 @@ class MainWindow(win.Window):
             prices.append((product, new_price))
         self.reg_obj(PriceUpdater(self, prices))
         self._info("загрузка цен завершена")
+
+    def _download_products(self):
+        self._clear_body()
+        self._info("выгрузка...")
+        file = utils.download_products()
+        self._info(f"выгрузка товаров завершена ({file})")
+        utils.appopen(file)
+
+    def _download_sales(self):
+        self._clear_body()
+        self._info("выгрузка...")
+        file = utils.download_sales()
+        self._info(f"выгрузка товаров завершена ({file})")
+        utils.appopen(file)
+
+    def _analyze_sales(self): ...
 
 
 def main():
