@@ -7,4 +7,4 @@ readme = "README.md"
 license = { file = "LICENSE" }
 dynamic = ["version"]
 requires-python = ">=3.12"
-dependencies = ["pyglet>=2", "numpy>=2.1", "pandas>=2.2", "matplotlib>=3.10"]
+dependencies = ["pyglet>=2", "numpy>=2.1", "pandas>=2.2", "matplotlib>=3.10", "XlsxWriter>=3.2"]

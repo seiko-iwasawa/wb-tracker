@@ -218,7 +218,9 @@ def download_products() -> str:
     while (download_folder() / filename).exists():
         n += 1
         filename = f"products ({n}).xlsx"
-    df.to_excel((download_folder() / filename))
+    with pd.ExcelWriter(download_folder() / filename, engine="xlsxwriter") as writer:
+        df.to_excel(writer, sheet_name="summary", index=False)
+        writer.sheets["summary"].autofit()
     return str(download_folder() / filename)
 
 
@@ -258,5 +260,7 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     while (download_folder() / filename).exists():
         n += 1
         filename = f"sales ({n}).xlsx"
-    df.to_excel((download_folder() / filename))
+    with pd.ExcelWriter(download_folder() / filename, engine="xlsxwriter") as writer:
+        df.to_excel(writer, sheet_name="summary", index=False)
+        writer.sheets["summary"].autofit()
     return str(download_folder() / filename)
