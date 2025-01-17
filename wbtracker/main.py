@@ -205,6 +205,7 @@ class PriceUpdater(win.WinBlock):
             )
             # apply
             if elem[0]._price != elem[1] or True:
+                weak_self = weakref.proxy(self)
                 table.reg_obj(
                     win.TextButton(
                         f"apply-{i}",
@@ -213,7 +214,9 @@ class PriceUpdater(win.WinBlock):
                             570, 500 - i * 40, 100, 30, 5, color=(148, 0, 216)
                         ),
                         win.Text.Label("ПРИНЯТЬ", color=(255, 255, 255), font_size=14),
-                        utils.apply_price,
+                        lambda product, new_price: weak_self._apply_price(
+                            product, new_price
+                        ),
                         elem[0],
                         elem[1],
                     )
@@ -228,6 +231,10 @@ class PriceUpdater(win.WinBlock):
         if self._start + 1 < len(self._prices):
             self._start += 1
             self._build_table()
+
+    def _apply_price(self, product: database.Database.Product, new_price: int) -> None:
+        utils.apply_price(product, new_price)
+        self._build_table()
 
 
 class MainWindow(win.Window):
