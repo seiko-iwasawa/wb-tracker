@@ -14,6 +14,7 @@ class Database:
             self._name: str = args["name"]
             self._price: int = args["price"]
             self._cost: int = args["cost"]
+            self._brand: str = args["brand"]
 
         def __eq__(self, value: object) -> bool:
             return isinstance(value, Database.Product) and (self._store, self._id) == (
@@ -30,6 +31,7 @@ class Database:
                 "name": self._name,
                 "price": self._price,
                 "cost": self._cost,
+                "brand": self._brand,
             }
 
     class Sale:

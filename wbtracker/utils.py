@@ -93,6 +93,14 @@ def get_price(store: str, id: str) -> int:
         raise NotImplemented(f"cannot get price for '{store}' store")
 
 
+def get_brand(store: str, id: str):
+    if store == "wb":
+        wb = requests.get(get_wb_card_url(int(id)))
+        return str(wb.json()["selling"]["brand_name"])
+    else:
+        raise NotImplemented(f"cannot get price for '{store}' store")
+
+
 def build_product(store: str, id: str, cost: int) -> database.Database.Product:
     return database.Database.Product(
         {
@@ -102,6 +110,7 @@ def build_product(store: str, id: str, cost: int) -> database.Database.Product:
             "name": get_name(store, id),
             "price": get_price(store, id),
             "cost": cost,
+            "brand": get_brand(store, id),
         }
     )
 
