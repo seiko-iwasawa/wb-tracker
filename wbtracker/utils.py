@@ -200,12 +200,15 @@ def download_folder() -> Path:
 
 def download_products() -> str:
     db = database.Database()
-    df = pd.DataFrame(columns=["store", "id", "vendor_code", "name", "price", "cost"])
+    df = pd.DataFrame(
+        columns=["store", "id", "vendor_code", "brand", "name", "price", "cost"]
+    )
     for i, product in enumerate(db._products):
         df.loc[i + 1] = [
             product._store,
             product._id,
             product._vendor_code,
+            product._brand,
             product._name,
             product._price,
             product._cost,
@@ -219,30 +222,36 @@ def download_products() -> str:
     return str(download_folder() / filename)
 
 
-def download_sales() -> str:
+def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     db = database.Database()
-    df = pd.DataFrame(columns=["store", "id", "vendor_code", "name", "all", "month"])
+    df = pd.DataFrame(
+        columns=["store", "id", "vendor_code", "brand", "name", "n", "sum"]
+    )
     for i, product in enumerate(db._products):
-        all_time = 0
-        month = 0
+        n = 0
+        sp = 0
         for sale in db._sales:
-            print(sale._store, sale._id, product._store, product._id)
             if (sale._store, sale._id) != (product._store, product._id):
                 continue
-            all_time += sale._price
             delta = (
                 datetime.datetime.strptime(sale._date, "%H:%M:%S %d.%m.%Y")
                 - datetime.datetime.now()
             )
-            if delta < datetime.timedelta(days=31):
-                month += sale._price
+            if (
+                start
+                <= datetime.datetime.strptime(sale._date, "%H:%M:%S %d.%m.%Y")
+                <= end
+            ):
+                n += 1
+                sp += sale._price
         df.loc[i + 1] = [
             product._store,
             product._id,
             product._vendor_code,
+            product._brand,
             product._name,
-            all_time,
-            month,
+            n,
+            sp,
         ]
     filename = "sales.xlsx"
     n = 1

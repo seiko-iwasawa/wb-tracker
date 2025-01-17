@@ -373,7 +373,9 @@ class MainWindow(win.Window):
     def _download_sales(self):
         self._clear_body()
         self._info("выгрузка...")
-        file = utils.download_sales()
+        end = datetime.datetime.now()
+        start = end - datetime.timedelta(days=31)
+        file = utils.download_sales(start, end)
         self._info(f"выгрузка товаров завершена ({file})")
         utils.appopen(file)
 
