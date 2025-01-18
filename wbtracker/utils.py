@@ -27,6 +27,15 @@ def read_wb_sales() -> Generator[tuple[str, str, int, str, str]]:
         )
 
 
+def read_ozon_sales() -> Generator[tuple[str, str, int, str, str, str]]:
+    if not (file := askopenfile()):
+        return
+    for product in pd.read_csv(file.name, sep=";").values:
+        yield str(product[0]), str(product[5]), int(product[7]), str(product[10]), str(
+            product[4]
+        ), str(product[9])
+
+
 def get_wb_card_url(art: int):
     vol = art // 10**5
     part = art // 10**3
@@ -67,6 +76,8 @@ def get_vendor_code(store: str, id: str) -> str:
     if store == "wb":
         wb = requests.get(get_wb_card_url(int(id)))
         return str(wb.json()["vendor_code"])
+    elif store == "ozon":
+        return ""
     else:
         raise NotImplemented(f"cannot get vendor code for '{store}' store")
 
@@ -75,6 +86,8 @@ def get_name(store: str, id: str) -> str:
     if store == "wb":
         wb = requests.get(get_wb_card_url(int(id)))
         return str(wb.json()["imt_name"])
+    elif store == "ozon":
+        return ""
     else:
         raise NotImplemented(f"cannot get name for '{store}' store")
 
@@ -91,6 +104,8 @@ def get_price(store: str, id: str) -> int:
             )
         except Exception:
             return -1
+    elif store == "ozon":
+        return -1
     else:
         raise NotImplemented(f"cannot get price for '{store}' store")
 
@@ -99,6 +114,8 @@ def get_brand(store: str, id: str):
     if store == "wb":
         wb = requests.get(get_wb_card_url(int(id)))
         return str(wb.json()["selling"]["brand_name"])
+    elif store == "ozon":
+        return ""
     else:
         raise NotImplemented(f"cannot get price for '{store}' store")
 
@@ -156,6 +173,28 @@ def add_wb_sales() -> Generator[str]:
             )
 
 
+def add_ozon_sales() -> Generator[str]:
+    db = database.Database()
+    for sticker, date, price, id, status, name in read_ozon_sales():
+        yield f"({date}) {id}"
+        if status == "Доставлен":
+            db.add_sale(
+                database.Database.Sale(
+                    {
+                        "store": "ozon",
+                        "sticker": sticker,
+                        "id": id,
+                        "date": date,
+                        "price": price,
+                    }
+                )
+            )
+            for product in db._products:
+                if (product._store, product._id) == ("ozon", id):
+                    product._name = name
+                    db.save()
+
+
 def update_price() -> Generator[tuple[database.Database.Product, int, str]]:
 
     def f(product: database.Database.Product):
@@ -186,8 +225,13 @@ def apply_price(product: database.Database.Product, new_price: int) -> None:
     db.add_product(product)
 
 
-def webopen(article: str) -> None:
-    webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")
+def webopen(store: str, article: str) -> None:
+    if store == "wb":
+        webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")
+    elif store == "ozon":
+        webbrowser.open(f"https://www.ozon.ru/product/{article}/")
+    else:
+        raise NotImplemented(f"cannot open webpage for '{store}' store")
 
 
 def appopen(filename: str) -> None:
@@ -237,15 +281,14 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
         for sale in db._sales:
             if (sale._store, sale._id) != (product._store, product._id):
                 continue
+            date_format = (
+                "%H:%M:%S %d.%m.%Y" if sale._store == "wb" else "%Y-%m-%d %H:%M:%S"
+            )
             delta = (
-                datetime.datetime.strptime(sale._date, "%H:%M:%S %d.%m.%Y")
+                datetime.datetime.strptime(sale._date, date_format)
                 - datetime.datetime.now()
             )
-            if (
-                start
-                <= datetime.datetime.strptime(sale._date, "%H:%M:%S %d.%m.%Y")
-                <= end
-            ):
+            if start <= datetime.datetime.strptime(sale._date, date_format) <= end:
                 n += 1
                 sp += sale._price
                 pr += sale._price - product._cost

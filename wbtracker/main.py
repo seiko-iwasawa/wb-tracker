@@ -394,7 +394,7 @@ class MainWindow(win.Window):
                 self,
                 win.Shape.RoundedRectangle(350, 650, 200, 50, 10, color=(148, 0, 216)),
                 win.Text.Label("Добавить продажи", font_size=14),
-                self._add_wb_sales,
+                self._add_sales,
             )
         )
         menu.reg_obj(
@@ -457,9 +457,38 @@ class MainWindow(win.Window):
             self._info(info)
         self._info("загрузка артикулов завершена")
 
+    def _add_sales(self):
+        self._clear_body()
+        body = win.WinBlock("body", self)
+        self.reg_obj(body)
+        body.reg_obj(
+            win.TextButton(
+                "wb",
+                self,
+                win.Shape.RoundedRectangle(200, 200, 100, 100, 10, color=(148, 0, 216)),
+                win.Text.Label("WB", font_size=14),
+                self._add_wb_sales,
+            )
+        )
+        body.reg_obj(
+            win.TextButton(
+                "ozon",
+                self,
+                win.Shape.RoundedRectangle(400, 200, 100, 100, 10, color=(71, 0, 254)),
+                win.Text.Label("OZON", font_size=14),
+                self._add_ozon_sales,
+            )
+        )
+
     def _add_wb_sales(self):
         self._info("загрузка...")
         for id in utils.add_wb_sales():
+            self._info(id)
+        self._info("загрузка продаж завершена")
+
+    def _add_ozon_sales(self):
+        self._info("загрузка...")
+        for id in utils.add_ozon_sales():
             self._info(id)
         self._info("загрузка продаж завершена")
 
