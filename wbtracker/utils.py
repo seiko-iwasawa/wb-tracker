@@ -1,5 +1,4 @@
 import datetime
-import threading
 import webbrowser
 from collections.abc import Generator
 from pathlib import Path
@@ -50,29 +49,20 @@ def build_product(store: str, id: str, cost: int) -> database.Database.Product:
 
 
 def add_products() -> Generator[str]:
-
-    def add_product(store: str, id: str, cost: int):
-        product = build_product(store, id, cost)
-        with lock:
-            db.add_product(product)
-
     db = database.Database()
     products = list(read_products())
-    lock = threading.Lock()
-    for s in range(0, len(products), 10):
+    for s in range(0, len(products)):
         yield f"{int(100 * s // len(products))}%"
-        threads: list[threading.Thread] = []
-        for store, id, cost in products[s : s + 10]:
-            thread = threading.Thread(target=add_product, args=(store, id, cost))
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
+        store, id, cost = products[s]
+        product = build_product(store, id, cost)
+        db.add_product(product)
 
 
-def add_wb_sales() -> Generator[str]:
+def add_sales(store: str) -> Generator[str]:
     db = database.Database()
-    for sticker, date, price, id, status, name, vendor_code in read_wb_sales():
+    for sticker, date, price, id, status, name, vendor_code in (
+        read_wb_sales() if store == "wb" else read_ozon_sales()
+    ):
         yield f"({date}) {id}"
         if status == "Продано":
             db.add_sale(
@@ -88,29 +78,6 @@ def add_wb_sales() -> Generator[str]:
             )
             for product in db._products:
                 if (product._store, product._id) == ("wb", id):
-                    product._name = name
-                    product._vendor_code = vendor_code
-                    db.save()
-
-
-def add_ozon_sales() -> Generator[str]:
-    db = database.Database()
-    for sticker, date, price, id, status, name, vendor_code in read_ozon_sales():
-        yield f"({date}) {id}"
-        if status == "Доставлен":
-            db.add_sale(
-                database.Database.Sale(
-                    {
-                        "store": "ozon",
-                        "sticker": sticker,
-                        "id": id,
-                        "date": date,
-                        "price": price,
-                    }
-                )
-            )
-            for product in db._products:
-                if (product._store, product._id) == ("ozon", id):
                     product._name = name
                     product._vendor_code = vendor_code
                     db.save()
