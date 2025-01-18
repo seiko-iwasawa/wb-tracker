@@ -34,28 +34,28 @@ def read_ozon_sales() -> Generator[tuple[str, str, int, str, str, str, str]]:
         ), str(product[9]), str(product[11])
 
 
-def build_product(store: str, id: str, cost: int) -> database.Database.Product:
-    return database.Database.Product(
-        {
-            "store": store,
-            "id": id,
-            "vendor_code": "",
-            "name": "",
-            "price": -1,
-            "cost": cost,
-            "brand": "",
-        }
-    )
-
-
 def add_products() -> Generator[str]:
     db = database.Database()
     products = list(read_products())
     for s in range(0, len(products)):
         yield f"{int(100 * s // len(products))}%"
         store, id, cost = products[s]
-        product = build_product(store, id, cost)
+        product = database.Database.Product(
+            {
+                "store": store,
+                "id": id,
+                "vendor_code": "",
+                "name": "",
+                "price": -1,
+                "cost": cost,
+                "brand": "",
+            }
+        )
         db.add_product(product)
+        product = db.find_product((store, id))
+        assert product
+        product.cost = cost
+    db.save()
 
 
 def add_sales(store: str) -> Generator[str]:
@@ -68,7 +68,7 @@ def add_sales(store: str) -> Generator[str]:
             db.add_sale(
                 database.Database.Sale(
                     {
-                        "store": "wb",
+                        "store": store,
                         "sticker": sticker,
                         "id": id,
                         "date": date,
@@ -76,11 +76,12 @@ def add_sales(store: str) -> Generator[str]:
                     }
                 )
             )
-            for product in db._products:
-                if (product._store, product._id) == ("wb", id):
-                    product._name = name
-                    product._vendor_code = vendor_code
-                    db.save()
+            product = db.find_product((store, id))
+            if product:
+                product.name = name
+                product.vendor_code = vendor_code
+                product.price = price
+    db.save()
 
 
 def webopen(store: str, article: str) -> None:
@@ -109,11 +110,11 @@ def download_products() -> str:
         df.loc[i + 1] = [
             product._store,
             product._id,
-            product._vendor_code,
-            product._brand,
-            product._name,
-            product._price,
-            product._cost,
+            product.vendor_code,
+            product.brand,
+            product.name,
+            product.price,
+            product.cost,
         ]
     df.sort_values(by="price", ascending=False, inplace=True)
     filename = "products.xlsx"
@@ -148,14 +149,14 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
             )
             if start <= datetime.datetime.strptime(sale._date, date_format) <= end:
                 n += 1
-                sp += sale._price
-                pr += sale._price - product._cost
+                sp += sale.price
+                pr += sale.price - product.cost
         df.loc[i + 1] = [
             product._store,
             product._id,
-            product._vendor_code,
-            product._brand,
-            product._name,
+            product.vendor_code,
+            product.brand,
+            product.name,
             n,
             sp,
             pr,

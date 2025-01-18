@@ -189,7 +189,8 @@ class MainWindow(win.Window):
                 self,
                 win.Shape.RoundedRectangle(200, 200, 100, 100, 10, color=(148, 0, 216)),
                 win.Text.Label("WB", font_size=14),
-                self._add_wb_sales,
+                self._add_sales_from,
+                "wb",
             )
         )
         body.reg_obj(
@@ -198,19 +199,14 @@ class MainWindow(win.Window):
                 self,
                 win.Shape.RoundedRectangle(400, 200, 100, 100, 10, color=(71, 0, 254)),
                 win.Text.Label("OZON", font_size=14),
-                self._add_ozon_sales,
+                self._add_sales_from,
+                "ozon",
             )
         )
 
-    def _add_wb_sales(self):
+    def _add_sales_from(self, store: str):
         self._info("загрузка...")
-        for id in utils.add_wb_sales():
-            self._info(id)
-        self._info("загрузка продаж завершена")
-
-    def _add_ozon_sales(self):
-        self._info("загрузка...")
-        for id in utils.add_ozon_sales():
+        for id in utils.add_sales("wb"):
             self._info(id)
         self._info("загрузка продаж завершена")
 

@@ -7,49 +7,49 @@ class Database:
 
     class Product:
 
+        Key = tuple[str, str]
+
         def __init__(self, args: dict) -> None:
             self._store: str = args["store"]
             self._id: str = args["id"]
-            self._vendor_code: str = args["vendor_code"]
-            self._name: str = args["name"]
-            self._price: int = args["price"]
-            self._cost: int = args["cost"]
-            self._brand: str = args["brand"]
+            self.vendor_code: str = args["vendor_code"]
+            self.name: str = args["name"]
+            self.price: int = args["price"]
+            self.cost: int = args["cost"]
+            self.brand: str = args["brand"]
 
         def __eq__(self, value: object) -> bool:
-            return isinstance(value, Database.Product) and (self._store, self._id) == (
-                value._store,
-                value._id,
-            )
+            return isinstance(value, Database.Product) and self.key == value.key
 
         @property
         def args(self) -> dict:
             return {
                 "store": self._store,
                 "id": self._id,
-                "vendor_code": self._vendor_code,
-                "name": self._name,
-                "price": self._price,
-                "cost": self._cost,
-                "brand": self._brand,
+                "vendor_code": self.vendor_code,
+                "name": self.name,
+                "price": self.price,
+                "cost": self.cost,
+                "brand": self.brand,
             }
 
+        @property
+        def key(self) -> Key:
+            return self._store, self._id
+
     class Sale:
+
+        Key = tuple[str, str, str, str]
 
         def __init__(self, args: dict) -> None:
             self._store: str = args["store"]
             self._sticker: str = args["sticker"]
             self._id: str = args["id"]
             self._date: str = args["date"]
-            self._price: int = args["price"]
+            self.price: int = args["price"]
 
         def __eq__(self, value: object) -> bool:
-            return isinstance(value, Database.Sale) and (
-                self._store,
-                self._sticker,
-                self._id,
-                self._date,
-            ) == (value._store, value._sticker, value._id, value._date)
+            return isinstance(value, Database.Sale) and self.key == value.key
 
         @property
         def args(self) -> dict:
@@ -58,8 +58,12 @@ class Database:
                 "sticker": self._sticker,
                 "id": self._id,
                 "date": self._date,
-                "price": self._price,
+                "price": self.price,
             }
+
+        @property
+        def key(self) -> Key:
+            return self._store, self._sticker, self._id, self._date
 
     def __init__(self) -> None:
         self._products = self._load_products()
@@ -86,17 +90,21 @@ class Database:
         self._save_sales()
 
     def add_product(self, product: Product) -> None:
-        if product in self._products:
-            ind = self._products.index(product)
-            self._products[ind] = product
-        else:
+        if product not in self._products:
             self._products.append(product)
-        self.save()
 
     def add_sale(self, sale: Sale) -> None:
-        if sale in self._sales:
-            ind = self._sales.index(sale)
-            self._sales[ind] = sale
-        else:
+        if sale not in self._sales:
             self._sales.append(sale)
-        self.save()
+
+    def find_product(self, key: Product.Key) -> Product | None:
+        for product in self._products:
+            if key == product.key:
+                return product
+        return None
+
+    def find_sale(self, key: Sale.Key) -> Sale | None:
+        for sale in self._sales:
+            if key == sale.key:
+                return sale
+        return None
