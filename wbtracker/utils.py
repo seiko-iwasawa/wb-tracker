@@ -9,78 +9,86 @@ import opener
 import pandas as pd
 
 
-def read_products() -> Generator[tuple[str, str, int]]:
+def read_products() -> Generator[database.Database.Product]:
     if not (file := askopenfile()):
         return
     for product in pd.read_excel(file.name).values:
-        yield str(product[0]), str(product[1]), int(product[2])
+        yield database.Database.Product(
+            {
+                "store": str(product[0]),
+                "id": str(product[1]),
+                "vendor_code": "",
+                "name": "",
+                "price": -1,
+                "cost": int(product[2]),
+                "brand": "",
+            }
+        )
 
 
-def read_wb_sales() -> Generator[tuple[str, str, int, str, str, str, str]]:
+def read_wb_sales() -> Generator[tuple[database.Database.Sale, str, str, str]]:
     if not (file := askopenfile()):
         return
     for product in pd.read_excel(file.name).values:
-        yield str(product[2]), str(product[4]), int(product[10]), str(product[12]), str(
-            product[16]
-        ), str(product[6]), str(product[13])
+        yield database.Database.Sale(
+            {
+                "store": "wb",
+                "sticker": str(product[2]),
+                "id": str(product[12]),
+                "date": str(product[4]),
+                "price": int(product[10]),
+            }
+        ), str(product[16]), str(product[6]), str(product[13])
 
 
-def read_ozon_sales() -> Generator[tuple[str, str, int, str, str, str, str]]:
+def read_ozon_sales() -> Generator[tuple[database.Database.Sale, str, str, str]]:
     if not (file := askopenfile()):
         return
     for product in pd.read_csv(file.name, sep=";").values:
-        yield str(product[0]), str(product[5]), int(product[7]), str(product[10]), str(
-            product[4]
-        ), str(product[9]), str(product[11])
+        yield database.Database.Sale(
+            {
+                "store": "ozon",
+                "sticker": str(product[0]),
+                "id": str(product[10]),
+                "date": str(product[5]),
+                "price": int(product[7]),
+            }
+        ), str(product[4]), str(product[9]), str(product[11])
+
+
+def add_product(db: database.Database, product: database.Database.Product) -> None:
+    if db_product := db.find_product(product.key):
+        db_product.cost = product.cost
+    else:
+        db.add_product(product)
 
 
 def add_products() -> Generator[str]:
     db = database.Database()
-    products = list(read_products())
-    for s in range(0, len(products)):
-        yield f"{int(100 * s // len(products))}%"
-        store, id, cost = products[s]
-        product = database.Database.Product(
-            {
-                "store": store,
-                "id": id,
-                "vendor_code": "",
-                "name": "",
-                "price": -1,
-                "cost": cost,
-                "brand": "",
-            }
-        )
-        db.add_product(product)
-        product = db.find_product((store, id))
-        assert product
-        product.cost = cost
+    for product in read_products():
+        yield f"{product.key}"
+        add_product(db, product)
     db.save()
+
+
+def add_sale(
+    db: database.Database, sale: database.Database.Sale, name: str, vendor_code: str
+) -> None:
+    db.add_sale(sale)
+    if product := db.find_product(sale.product_key):
+        product.name = name
+        product.vendor_code = vendor_code
+        product.price = sale.price
 
 
 def add_sales(store: str) -> Generator[str]:
     db = database.Database()
-    for sticker, date, price, id, status, name, vendor_code in (
-        read_wb_sales() if store == "wb" else read_ozon_sales()
-    ):
-        yield f"({date}) {id}"
-        if status == "Продано":
-            db.add_sale(
-                database.Database.Sale(
-                    {
-                        "store": store,
-                        "sticker": sticker,
-                        "id": id,
-                        "date": date,
-                        "price": price,
-                    }
-                )
-            )
-            product = db.find_product((store, id))
-            if product:
-                product.name = name
-                product.vendor_code = vendor_code
-                product.price = price
+    sales = read_wb_sales() if store == "wb" else read_ozon_sales()
+    ok_status = "Продано" if store == "wb" else "Доставлен"
+    for sale, status, name, vendor_code in sales:
+        yield f"{sale.key}"
+        if status == ok_status:
+            add_sale(db, sale, name, vendor_code)
     db.save()
 
 
@@ -101,74 +109,82 @@ def download_folder() -> Path:
     return Path.home() / "Downloads"
 
 
-def download_products() -> str:
-    db = database.Database()
-    df = pd.DataFrame(
-        columns=["store", "id", "vendor_code", "brand", "name", "price", "cost"]
-    )
-    for i, product in enumerate(db._products):
-        df.loc[i + 1] = [
-            product._store,
-            product._id,
-            product.vendor_code,
-            product.brand,
-            product.name,
-            product.price,
-            product.cost,
-        ]
-    df.sort_values(by="price", ascending=False, inplace=True)
-    filename = "products.xlsx"
+def gen_download_file(name: str, ext: str) -> Path:
+    filename = f"{name}.{ext}"
     n = 1
     while (download_folder() / filename).exists():
         n += 1
-        filename = f"products ({n}).xlsx"
-    with pd.ExcelWriter(download_folder() / filename, engine="xlsxwriter") as writer:
+        filename = f"{name} ({n}).{ext}"
+    return download_folder() / filename
+
+
+def df_to_xlsx(df: pd.DataFrame, file: Path):
+    with pd.ExcelWriter(file, engine="xlsxwriter") as writer:
         df.to_excel(writer, sheet_name="summary", index=False)
         writer.sheets["summary"].autofit()
-    return str(download_folder() / filename)
+
+
+def get_df_products() -> pd.DataFrame:
+    db = database.Database()
+    return (
+        db.df_products.drop("brand", axis=1)
+        .sort_values(by="price", ascending=False)
+        .rename(
+            columns={
+                "store": "Магазин",
+                "id": "Артикул",
+                "vendor_code": "Код продавца",
+                "name": "Название",
+                "price": "Цена",
+                "cost": "Себестоимость",
+            }
+        )
+    )
+
+
+def download_products() -> str:
+    df_to_xlsx(get_df_products(), file := gen_download_file("products", "xlsx"))
+    return str(file)
+
+
+def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFrame:
+
+    def check_date(row: pd.Series):
+        date_format = (
+            "%H:%M:%S %d.%m.%Y" if row["store"] == "wb" else "%Y-%m-%d %H:%M:%S"
+        )
+        return start <= datetime.datetime.strptime(row["date"], date_format) <= end
+
+    db = database.Database()
+    products = db.df_products
+    sales = db.df_sales
+    sales = (
+        sales[sales.apply(check_date, axis=1)]
+        .groupby(["store", "id"])
+        .agg({"price": "sum", "date": "count"})
+        .rename(columns={"price": "sum", "date": "n"})
+    )
+    df = products.join(sales, on=["store", "id"], how="right")
+    df = df[df["n"] > 0]
+    df["profit"] = df["sum"] - df["cost"] * df["n"]
+    df = (
+        df.drop(["brand", "price", "cost"], axis=1)
+        .rename(
+            {
+                "store": "Магазин",
+                "id": "Артикул",
+                "vendor_code": "Код продавца",
+                "name": "Название",
+                "sum": "Сумма",
+                "n": "Кол-во",
+                "profit": "Прибыль",
+            }
+        )
+        .sort_values("n", ascending=False)
+    )
+    return df
 
 
 def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
-    db = database.Database()
-    df = pd.DataFrame(
-        columns=["store", "id", "vendor_code", "brand", "name", "n", "sum", "profit"]
-    )
-    for i, product in enumerate(db._products):
-        n = 0
-        sp = 0
-        pr = 0
-        for sale in db._sales:
-            if (sale._store, sale._id) != (product._store, product._id):
-                continue
-            date_format = (
-                "%H:%M:%S %d.%m.%Y" if sale._store == "wb" else "%Y-%m-%d %H:%M:%S"
-            )
-            delta = (
-                datetime.datetime.strptime(sale._date, date_format)
-                - datetime.datetime.now()
-            )
-            if start <= datetime.datetime.strptime(sale._date, date_format) <= end:
-                n += 1
-                sp += sale.price
-                pr += sale.price - product.cost
-        df.loc[i + 1] = [
-            product._store,
-            product._id,
-            product.vendor_code,
-            product.brand,
-            product.name,
-            n,
-            sp,
-            pr,
-        ]
-    df = df[df["n"] > 0]
-    df.sort_values("n", ascending=False, inplace=True)
-    filename = "sales.xlsx"
-    n = 1
-    while (download_folder() / filename).exists():
-        n += 1
-        filename = f"sales ({n}).xlsx"
-    with pd.ExcelWriter(download_folder() / filename, engine="xlsxwriter") as writer:
-        df.to_excel(writer, sheet_name="summary", index=False)
-        writer.sheets["summary"].autofit()
-    return str(download_folder() / filename)
+    df_to_xlsx(get_df_sales(start, end), file := gen_download_file("sales", "xlsx"))
+    return str(file)

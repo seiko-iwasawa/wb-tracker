@@ -206,7 +206,7 @@ class MainWindow(win.Window):
 
     def _add_sales_from(self, store: str):
         self._info("загрузка...")
-        for id in utils.add_sales("wb"):
+        for id in utils.add_sales(store):
             self._info(id)
         self._info("загрузка продаж завершена")
 

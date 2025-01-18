@@ -1,6 +1,7 @@
 import json
 
 import appdata
+import pandas as pd
 
 
 class Database:
@@ -65,6 +66,10 @@ class Database:
         def key(self) -> Key:
             return self._store, self._sticker, self._id, self._date
 
+        @property
+        def product_key(self) -> "Database.Product.Key":
+            return self._store, self._id
+
     def __init__(self) -> None:
         self._products = self._load_products()
         self._sales = self._load_sales()
@@ -108,3 +113,21 @@ class Database:
             if key == sale.key:
                 return sale
         return None
+
+    @property
+    def df_products(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            columns=["store", "id", "vendor_code", "brand", "name", "price", "cost"]
+        )
+        for i, product in enumerate(self._products):
+            for key, val in product.args.items():
+                df.loc[i, key] = val
+        return df
+
+    @property
+    def df_sales(self) -> pd.DataFrame:
+        df = pd.DataFrame(columns=["store", "sticker", "id", "date", "price"])
+        for i, product in enumerate(self._sales):
+            for key, val in product.args.items():
+                df.loc[i, key] = val
+        return df
