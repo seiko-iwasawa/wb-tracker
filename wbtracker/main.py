@@ -151,6 +151,7 @@ class MainWindow(win.Window):
                 ("Добавить продажи", self._add_sales),
                 ("Выгрузить товары", self._download_products),
                 ("Выгрузить продажи", self._download_sales),
+                ("Построить график", utils.build_plot),
             ],
         )
         self._output = Info(self)

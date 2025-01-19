@@ -5,6 +5,7 @@ from pathlib import Path
 from tkinter.filedialog import askopenfile
 
 import database
+import matplotlib.pyplot as plt
 import opener
 import pandas as pd
 
@@ -188,6 +189,47 @@ def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFra
 def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     df_to_xlsx(get_df_sales(start, end), file := gen_download_file("sales", "xlsx"))
     return str(file)
+
+
+def build_plot() -> None:
+
+    def short_date(date: str):
+        try:
+            date_format = "%H:%M:%S %d.%m.%Y"
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%Y")
+        except Exception:
+            date_format = "%Y-%m-%d %H:%M:%S"
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%Y")
+
+    db = database.Database()
+    sales = db.df_sales
+    sales["short_date"] = sales["date"].apply(short_date)
+    sales = (
+        sales.groupby(by=["id", "short_date"])
+        .agg({"date": "count", "price": "sum"})
+        .rename(columns={"date": "n", "price": "sum"})
+    )
+    baskets: list[int] = [0, 0, 0]
+    for n, sum in sales[["n", "sum"]].values:
+        if n <= 3:
+            baskets[0] += sum
+        elif n <= 10:
+            baskets[1] += sum
+        else:
+            baskets[2] += sum
+
+    _, ax = plt.subplots()
+
+    fruits = ["1-3", "4-10", ">10"]
+    bar_labels = ["red", "blue", "green"]
+    bar_colors = ["tab:red", "tab:blue", "tab:green"]
+
+    ax.bar(fruits, baskets, label=bar_labels, color=bar_colors)
+
+    ax.set_ylabel("сумма (руб.)")
+    ax.set_title("Сравнение дохода по продажам в месяц")
+
+    plt.show()
 
 
 month_names = [
