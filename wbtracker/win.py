@@ -76,9 +76,15 @@ class Background(Shape):
         super().__init__(
             "background",
             window,
-            Shape.Rectangle(0, 0, window.width, window.height, color),
+            Shape.Rectangle(
+                0,
+                0,
+                window.width,
+                window.height,
+                color,
+                group=pyglet.graphics.Group(-1),
+            ),
         )
-        self._shape.batch = window._back_batch
 
 
 class Button(ActiveObj):
@@ -171,7 +177,6 @@ class Window(pyglet.window.Window):
                 sample_buffers=1, samples=4
             ),  # anti-aliasing
         )
-        self._back_batch = pyglet.graphics.Batch()
         self._batch = pyglet.graphics.Batch()
         self._objects = WinBlock("main", self)
 
@@ -198,7 +203,6 @@ class Window(pyglet.window.Window):
 
     def on_draw(self) -> None:
         self.clear()
-        self._back_batch.draw()
         self._batch.draw()
         pyglet.gl.glFlush()
 
