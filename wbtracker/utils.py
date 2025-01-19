@@ -188,3 +188,19 @@ def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFra
 def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     df_to_xlsx(get_df_sales(start, end), file := gen_download_file("sales", "xlsx"))
     return str(file)
+
+
+month_names = [
+    "Январь",
+    "Февраль",
+    "Март",
+    "Апрель",
+    "Май",
+    "Июнь",
+    "Июль",
+    "Август",
+    "Сентябрь",
+    "Октябрь",
+    "Ноябрь",
+    "Декабрь",
+]
