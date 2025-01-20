@@ -103,7 +103,7 @@ def webopen(store: str, article: str) -> None:
 
 
 def appopen(filename: str) -> None:
-    opener.subprocess_opener(f"'{filename}'")
+    opener.subprocess_opener(f"{filename}")
 
 
 def download_folder() -> Path:

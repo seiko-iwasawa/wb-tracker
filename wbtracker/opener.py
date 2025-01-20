@@ -21,12 +21,12 @@
 # ------------------------------------------------------
 
 from platform import system
-from subprocess import PIPE, Popen, check_output
+from subprocess import PIPE, Popen
 
 OSNAME = system().lower()
 
 
-def get_open_command(filepath):
+def get_open_command(filepath: str) -> str:
     """
     Get the console-like command to open the file
     for the current platform:
@@ -39,15 +39,15 @@ def get_open_command(filepath):
     :rtype:             string
     """
     if "windows" in OSNAME:
-        opener = "start"
+        opener = 'start ""'
     elif "osx" in OSNAME or "darwin" in OSNAME:
         opener = "open"
     else:
         opener = "xdg-open"
-    return "{opener} {filepath}".format(opener=opener, filepath=filepath)
+    return '{opener} "{filepath}"'.format(opener=opener, filepath=filepath)
 
 
-def subprocess_opener(filepath):
+def subprocess_opener(filepath: str) -> Popen:
     """
     Method to open the file with the default program in a subprocess.
     As being called in a subprocess, it will not block the current one.
@@ -73,39 +73,3 @@ def subprocess_opener(filepath):
     subproc = Popen(get_open_command(filepath), stdout=PIPE, stderr=PIPE, shell=True)
     subproc.wait()
     return subproc
-
-
-# Code to run it as a script
-
-if __name__ == "__main__":
-    import click
-
-    @click.command()
-    @click.argument("filepath")
-    @click.option(
-        "-v",
-        "--verbose",
-        type=bool,
-        is_flag=True,
-        default=False,
-        help="Show verbose messages",
-    )
-    def command_opener(filepath, verbose):
-        from os.path import isfile
-
-        if not isfile(filepath):
-            print("Filepath does not get to a file!")
-            exit(-1)
-
-        if verbose:
-            print(
-                'Opening: "{}" with: "{}"'.format(
-                    filepath, get_open_command(filepath=filepath)
-                )
-            )
-        subproc = subprocess_opener(filepath)
-
-        if verbose:
-            print("File opened in a child process")
-
-    command_opener()
