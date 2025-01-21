@@ -249,9 +249,29 @@ class MainWindow(win.Window):
     def _add_sales_from(self, store: str) -> None:
         self.set_loading_cursor()
         self._output.info = "загрузка..."
+        warnings: list[str] = []
         for info in utils.add_sales(store):
             self._output.info = info
+            if info.startswith("warning"):
+                warnings.append(info)
         self._output.info = "загрузка продаж завершена"
+        if warnings:
+            self._clear_body()
+            self.reg_obj(
+                win.Text(
+                    "body",
+                    self,
+                    win.Text.Label(
+                        "\n".join([f"{len(warnings)} предупреждений. Первые из них:\n"] + warnings[:10]),
+                        100,
+                        400,
+                        width=800,
+                        font_size=14,
+                        color=(0, 0, 0),
+                        multiline=True
+                    ),
+                )
+            )
         self.unset_loading_cursor()
 
     def _download_products(self) -> None:

@@ -90,6 +90,8 @@ def add_sales(store: str) -> Generator[str]:
         yield f"{sale.key}"
         if status == ok_status:
             add_sale(db, sale, name, vendor_code)
+            if not db.find_product(sale.product_key):
+                yield f"warning: {vendor_code} not found"
     db.save()
 
 
