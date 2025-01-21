@@ -307,6 +307,12 @@ class Window(pyglet.window.Window):
         self._batch.draw()
         pyglet.gl.glFlush()
 
+    def set_loading_cursor(self) -> None:
+        self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_WAIT))
+
+    def unset_loading_cursor(self) -> None:
+        self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_DEFAULT))
+
     def run(self) -> None:
         pyglet.app.run(1 / 30)
 

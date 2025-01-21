@@ -206,10 +206,12 @@ class MainWindow(win.Window):
             self.on_draw()
 
     def _add_products(self) -> None:
+        self.set_loading_cursor()
         self._output.info = "загрузка..."
         for info in utils.add_products():
             self._output.info = info
         self._output.info = "загрузка артикулов завершена"
+        self.unset_loading_cursor()
 
     def _add_sales(self) -> None:
         self._clear_body()
@@ -245,23 +247,28 @@ class MainWindow(win.Window):
         )
 
     def _add_sales_from(self, store: str) -> None:
+        self.set_loading_cursor()
         self._output.info = "загрузка..."
         for info in utils.add_sales(store):
             self._output.info = info
         self._output.info = "загрузка продаж завершена"
+        self.unset_loading_cursor()
 
     def _download_products(self) -> None:
+        self.set_loading_cursor()
         self._clear_body()
         self._output.info = "выгрузка..."
         file = utils.download_products()
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
+        self.unset_loading_cursor()
 
     def _download_sales(self) -> None:
         self._clear_body()
         self.reg_obj(PeriodChooser(self, self._download_sales_for_period))
 
     def _download_sales_for_period(self) -> None:
+        self.set_loading_cursor()
         assert isinstance(period := self["body"], PeriodChooser)
         year, month = period._year, period._month
         self._clear_body()
@@ -273,9 +280,12 @@ class MainWindow(win.Window):
         file = utils.download_sales(start, end)
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
+        self.unset_loading_cursor()
 
     def _build_plot(self):
+        self.set_loading_cursor()
         utils.build_plot(self._input_field.text)
+        self.unset_loading_cursor()
 
 
 def main():
