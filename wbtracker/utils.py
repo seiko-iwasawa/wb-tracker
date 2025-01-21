@@ -191,43 +191,49 @@ def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
     return str(file)
 
 
-def build_plot() -> None:
+def build_plot(art: str) -> None:
 
     def short_date(date: str):
         try:
             date_format = "%H:%M:%S %d.%m.%Y"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%Y")
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
         except Exception:
             date_format = "%Y-%m-%d %H:%M:%S"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%Y")
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
 
     db = database.Database()
     sales = db.df_sales
+    products = db.df_products
     sales["short_date"] = sales["date"].apply(short_date)
-    sales = (
-        sales.groupby(by=["id", "short_date"])
-        .agg({"date": "count", "price": "sum"})
-        .rename(columns={"date": "n", "price": "sum"})
+    sales = sales.merge(products, on="id")
+
+    month, year = map(int, datetime.date.today().strftime("%m %y").split())
+    months = []
+    for i in range(25):
+        months.append(f"{month // 10}{month % 10}.{year % 100}")
+        month -= 1
+        if not month:
+            year -= 1
+            month = 12
+    months = months[::-1]
+    vals = [
+        sum(
+            (sales["short_date"] == months[i])
+            & (sales["vendor_code"].str.contains(art))
+        )
+        for i in range(25)
+    ]
+
+    plt.figure(figsize=(15, 6))
+    plt.bar(
+        months,
+        vals,
     )
-    baskets: list[int] = [0, 0, 0]
-    for n, sum in sales[["n", "sum"]].values:
-        if n <= 3:
-            baskets[0] += sum
-        elif n <= 10:
-            baskets[1] += sum
-        else:
-            baskets[2] += sum
-
-    _, ax = plt.subplots()
-
-    fruits = ["1-3", "4-10", ">10"]
-    bar_labels = ["red", "blue", "green"]
-    bar_colors = ["tab:red", "tab:blue", "tab:green"]
-
-    ax.bar(fruits, baskets, label=bar_labels, color=bar_colors)
-
-    ax.set_ylabel("сумма (руб.)")
-    ax.set_title("Сравнение дохода по продажам в месяц")
+    plt.xticks(rotation=45)
+    if max(vals) <= 5:
+        plt.yticks(range(0, max(vals) + 1))
+    plt.xlabel("месяц")
+    plt.ylabel("кол-во продаж")
 
     plt.show()
 

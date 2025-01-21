@@ -246,6 +246,10 @@ class Input(ActiveObj):
         else:
             print(symbol)
 
+    @property
+    def text(self) -> str:
+        return self._text.text if self._flag else ""
+
 
 class Window(pyglet.window.Window):
     def __init__(self, width: int, height: int, name: str) -> None:

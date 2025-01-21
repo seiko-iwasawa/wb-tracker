@@ -50,8 +50,12 @@ class PeriodChooser(win.WinBlock):
             win.TextButton(
                 "OK",
                 window,
-                win.Shape.RoundedRectangle(850, 585, 100, 100, 10, color=(148, 0, 216)),
-                win.Text.Label("OK", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        850, 585, 100, 100, 10, color=(148, 0, 216)
+                    ),
+                    win.Text.Label("OK", font_size=14),
+                ),
                 action,
             )
         )
@@ -59,8 +63,12 @@ class PeriodChooser(win.WinBlock):
             win.TextButton(
                 "year-down",
                 window,
-                win.Shape.RoundedRectangle(600, 655, 40, 40, 5, color=(148, 0, 216)),
-                win.Text.Label("<", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        600, 655, 40, 40, 5, color=(148, 0, 216)
+                    ),
+                    win.Text.Label("<", font_size=14),
+                ),
                 lambda: weak_self._year_shift(-1),
             )
         )
@@ -68,8 +76,12 @@ class PeriodChooser(win.WinBlock):
             win.TextButton(
                 "year-up",
                 window,
-                win.Shape.RoundedRectangle(780, 655, 40, 40, 5, color=(148, 0, 216)),
-                win.Text.Label(">", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        780, 655, 40, 40, 5, color=(148, 0, 216)
+                    ),
+                    win.Text.Label(">", font_size=14),
+                ),
                 lambda: weak_self._year_shift(+1),
             )
         )
@@ -77,8 +89,12 @@ class PeriodChooser(win.WinBlock):
             win.TextButton(
                 "month-down",
                 window,
-                win.Shape.RoundedRectangle(600, 575, 40, 40, 5, color=(148, 0, 216)),
-                win.Text.Label("<", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        600, 575, 40, 40, 5, color=(148, 0, 216)
+                    ),
+                    win.Text.Label("<", font_size=14),
+                ),
                 lambda: weak_self._month_shift(-1),
             )
         )
@@ -86,8 +102,12 @@ class PeriodChooser(win.WinBlock):
             win.TextButton(
                 "month-up",
                 window,
-                win.Shape.RoundedRectangle(780, 575, 40, 40, 5, color=(148, 0, 216)),
-                win.Text.Label(">", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        780, 575, 40, 40, 5, color=(148, 0, 216)
+                    ),
+                    win.Text.Label(">", font_size=14),
+                ),
                 lambda: weak_self._month_shift(+1),
             )
         )
@@ -114,10 +134,17 @@ class Menu(win.WinBlock):
                 win.TextButton(
                     f"{i}-{j}",
                     window,
-                    win.Shape.RoundedRectangle(
-                        100 + j * 250, 650 - 80 * i, 200, 50, 10, color=(148, 0, 216)
+                    win.Text.ShapedLabel(
+                        win.Shape.RoundedRectangle(
+                            100 + j * 250,
+                            650 - 80 * i,
+                            200,
+                            50,
+                            10,
+                            color=(148, 0, 216),
+                        ),
+                        win.Text.Label(button[0], font_size=14),
                     ),
-                    win.Text.Label(button[0], font_size=14),
                     button[1],
                 )
             )
@@ -151,10 +178,27 @@ class MainWindow(win.Window):
                 ("Добавить продажи", self._add_sales),
                 ("Выгрузить товары", self._download_products),
                 ("Выгрузить продажи", self._download_sales),
-                ("Построить график", utils.build_plot),
+                ("Построить график", self._build_plot),
             ],
         )
         self._output = Info(self)
+        self._input_field = win.Input(
+            "input",
+            self,
+            win.Text.ShapedLabel(
+                win.Shape.RoundedRectangle(
+                    350,
+                    490,
+                    200,
+                    50,
+                    10,
+                    color=(148, 0, 216),
+                ),
+                win.Text.Label(font_size=14),
+            ),
+            "введите артикул...",
+        )
+        self.reg_obj(self._input_field)
 
     def _clear_body(self) -> None:
         if "body" in self:
@@ -175,8 +219,12 @@ class MainWindow(win.Window):
             win.TextButton(
                 "wb",
                 self,
-                win.Shape.RoundedRectangle(600, 585, 100, 100, 10, color=(148, 0, 216)),
-                win.Text.Label("WB", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        600, 585, 100, 100, 10, color=(148, 0, 216)
+                    ),
+                    win.Text.Label("WB", font_size=14),
+                ),
                 self._add_sales_from,
                 "wb",
             )
@@ -185,8 +233,12 @@ class MainWindow(win.Window):
             win.TextButton(
                 "ozon",
                 self,
-                win.Shape.RoundedRectangle(750, 585, 100, 100, 10, color=(71, 0, 254)),
-                win.Text.Label("OZON", font_size=14),
+                win.Text.ShapedLabel(
+                    win.Shape.RoundedRectangle(
+                        750, 585, 100, 100, 10, color=(71, 0, 254)
+                    ),
+                    win.Text.Label("OZON", font_size=14),
+                ),
                 self._add_sales_from,
                 "ozon",
             )
@@ -221,6 +273,9 @@ class MainWindow(win.Window):
         file = utils.download_sales(start, end)
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
+
+    def _build_plot(self):
+        utils.build_plot(self._input_field.text)
 
 
 def main():
