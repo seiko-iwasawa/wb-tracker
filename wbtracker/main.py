@@ -122,6 +122,9 @@ class MainWindow(win.Window):
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
         self._background = win.Background(self, (255, 255, 255))
+        self["top-line"] = win.Shape(
+            win.Shape.Line(0, 720, 1080, 720, 3, (148, 0, 216))
+        )
         self._menu = Menu(
             self,
             [
