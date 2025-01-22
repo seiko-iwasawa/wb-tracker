@@ -1,41 +1,69 @@
+import weakref
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator
+from typing import Any, TypedDict
 
 import pyglet
 
+Canvas = pyglet.graphics.Batch
 
-class WinObj:
-    def __init__(self, name: str, window: "Window") -> None:
-        self._name = name
-        self._window = window
+
+class WinObj(ABC):
+
+    def __init__(self) -> None:
+        self._name: str | None = None
+        self._parent: WinObj | None = None
+        self._canvas: Canvas | None = None
 
     @property
     def name(self) -> str:
+        if not self._name:
+            raise ValueError("name not set")
         return self._name
 
+    def _set_name(self, name: str) -> None:
+        self._name = name
+
     @property
-    def window(self) -> "Window":
-        return self._window
+    def parent(self) -> "WinObj | None":
+        return self._parent
+
+    def _set_parent(self, parent: "WinObj") -> None:
+        self._parent = weakref.proxy(parent)
+        self._set_canvas(parent.canvas)
+
+    @property
+    def canvas(self) -> Canvas | None:
+        return self._canvas
+
+    @abstractmethod
+    def _set_canvas(self, canvas: Canvas | None) -> None: ...
 
 
 class WinBlock(WinObj):
-    def __init__(self, name: str, window: "Window") -> None:
-        super().__init__(name, window)
+
+    def __init__(self) -> None:
+        super().__init__()
         self._block: dict[str, WinObj] = {}
 
     def __getitem__(self, name: str) -> WinObj:
         return self._block[name]
 
+    def __setitem__(self, name: str, obj: WinObj | None) -> None:
+        if obj is None:
+            self._block.pop(name, None)
+        else:
+            obj._set_name(name)
+            obj._set_parent(self)
+            self._block[name] = obj
+
     def __contains__(self, name: str) -> bool:
         return name in self._block
 
-    def reg_obj(self, obj: WinObj) -> None:
-        if obj.name in self._block:
-            raise ValueError(f"name {obj.name} is already registered")
-        self._block[obj.name] = obj
-
-    def remove_obj(self, name: str) -> None:
-        self._block.pop(name)
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self._canvas = canvas
+        for obj in self._block.values():
+            obj._set_canvas(canvas)
 
     def all(self) -> Generator[WinObj]:
         for obj in self._block.values():
@@ -45,7 +73,8 @@ class WinBlock(WinObj):
                 yield obj
 
 
-class ActiveObj(WinObj, ABC):
+class ActiveObj(WinObj):
+
     @abstractmethod
     def __contains__(self, coords: tuple[int, int]) -> bool: ...
 
@@ -65,17 +94,26 @@ class Shape(InactiveObj):
     Box = pyglet.shapes.Box
     Circle = pyglet.shapes.Circle
 
-    def __init__(self, name, window: "Window", shape: Base) -> None:
-        super().__init__(name, window)
-        shape.batch = window.batch
+    def __init__(self, shape: Base) -> None:
+        super().__init__()
         self._shape = shape
+
+    @property
+    def shape(self):
+        return self._shape
+
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self._shape.batch = canvas
 
 
 class Background(Shape):
-    def __init__(self, window: "Window", color: tuple[int, int, int]) -> None:
+
+    def __init__(
+        self,
+        window: "Window",
+        color: tuple[int, int, int, int] | tuple[int, int, int],
+    ) -> None:
         super().__init__(
-            "background",
-            window,
             Shape.Rectangle(
                 0,
                 0,
@@ -83,172 +121,207 @@ class Background(Shape):
                 window.height,
                 color,
                 group=pyglet.graphics.Group(-9999),
-            ),
+            )
         )
+        window["background"] = self
 
 
 class Button(ActiveObj):
 
     def __init__(
         self,
-        name: str,
-        window: "Window",
         shape: Shape.Base,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
-        super().__init__(name, window)
-        shape.batch = window.batch
+        super().__init__()
         self._shape = shape
-        self._action = lambda: action(*action_args, **action_kwargs)
+        self._action = action
+        self._args = action_args
+        self._kwargs = action_kwargs
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
         return coords in self._shape
 
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self._shape.batch = canvas
+
+    @property
+    def shape(self) -> Shape.Base:
+        return self._shape
+
     def act(self) -> None:
-        self._action()
+        self._action(*self._args, **self._kwargs)
 
 
 class Text(InactiveObj):
 
     Label = pyglet.text.Label
 
-    class ShapedLabel:
-
-        def __init__(self, shape: Shape.Base, text: "Text.Label") -> None:
-            if isinstance(shape, Shape.Rectangle | Shape.RoundedRectangle):
-                text.x = shape.x
-                text.y = shape.y + shape.height / 2 - text.font_size / 2
-                text.width = int(shape.width)
-                text.height = int(shape.height)
-                text.set_style("align", "center")
-            else:
-                raise NotImplemented("unknown area type")
-            self._shape = shape
-            self._text = text
-
-        @property
-        def shape(self) -> Shape.Base:
-            return self._shape
-
-        @property
-        def text(self) -> "Text.Label":
-            return self._text
-
-    def __init__(self, name: str, window: "Window", text: Label) -> None:
-        super().__init__(name, window)
-        text.batch = window.batch
-        self._text = text
+    def __init__(self, label: Label) -> None:
+        super().__init__()
+        self._label = label
 
     @property
-    def text(self):
-        return self._text
+    def label(self) -> Label:
+        return self._label
+
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self.label.batch = canvas
+
+
+def shape_text(shape: Shape.Base, label: Text.Label) -> None:
+    if isinstance(shape, Shape.Rectangle | Shape.RoundedRectangle):
+        label.x = shape.x
+        label.y = shape.y + shape.height / 2 - label.font_size / 2
+        label.width = int(shape.width)
+        label.height = int(shape.height)
+        label.set_style("align", "center")
+    else:
+        raise NotImplemented("unknown area type")
+
+
+class ShapedText(WinBlock):
+
+    class Block(TypedDict):
+        shape: Shape
+        text: Text
+
+    _block: Block
+
+    def __init__(self, shape: Shape.Base, label: Text.Label) -> None:
+        super().__init__()
+        shape_text(shape, label)
+        self["shape"] = Shape(shape)
+        self["text"] = Text(label)
+
+    @property
+    def shape(self) -> Shape.Base:
+        return self._block["shape"].shape
+
+    @property
+    def text(self) -> Text.Label:
+        return self._block["text"].label
 
 
 class TextButton(Button):
     def __init__(
         self,
-        name: str,
-        window: "Window",
-        shaped_text: Text.ShapedLabel,
+        shape: Shape.Base,
+        label: Text.Label,
         action: Callable,
         *action_args,
         **action_kwargs,
     ) -> None:
-        super().__init__(
-            name, window, shaped_text.shape, action, *action_args, **action_kwargs
-        )
-        shaped_text.text.batch = window.batch
-        self._text = shaped_text.text
+        super().__init__(shape, action, *action_args, **action_kwargs)
+        shape_text(shape, label)
+        self._label = label
+
+    @property
+    def label(self) -> Text.Label:
+        return self._label
+
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        super()._set_canvas(canvas)
+        self._label.batch = canvas
 
 
 class Image(InactiveObj):
     def __init__(
         self,
-        name: str,
-        window: "Window",
+        filename: str,
         x: int,
         y: int,
-        filename: str,
         width: int | None,
         height: int | None,
     ) -> None:
-        super().__init__(name, window)
-        self._img = pyglet.sprite.Sprite(
-            pyglet.image.load(filename), x, y, batch=window.batch
-        )
+        super().__init__()
+        self._img = pyglet.sprite.Sprite(pyglet.image.load(filename), x, y)
         self._img.width = width or self._img.width
         self._img.height = height or self._img.height
+
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self._img.batch = canvas
 
 
 class Input(ActiveObj):
 
     def __init__(
         self,
-        name: str,
         window: "Window",
-        field: Text.ShapedLabel,
+        shape: Shape.Base,
+        label: Text.Label,
         default_text: str = "input...",
     ) -> None:
-        super().__init__(name, window)
-        self._shape = field.shape
-        self._text = field.text
-        self._text.text = default_text
-        self._shape.batch = window.batch
-        self._text.batch = window.batch
-        self._shape.opacity = 127
-        self._flag = False
+        super().__init__()
+        shape_text(shape, label)
+        self._window = window
+        self._shape = shape
+        self._label = label
         self._default_text = default_text
+        self._empty: bool = True
+        self.disable()
 
     def __contains__(self, coords: tuple[int, int]) -> bool:
         return coords in self._shape
 
+    def _set_canvas(self, canvas: Canvas | None) -> None:
+        self._shape.batch = canvas
+        self._label.batch = canvas
+
     def act(self) -> None:
-        self.window.input = self
-        if not self._flag:
-            self._text.text = ""
-        self._flag = True
-        self._shape.opacity = 255
+        self._window.input = self
+        self.enable()
 
-    def deact(self) -> None:
-        self.window.input = None
-        if not self._text.text:
-            self._text.text = self._default_text
-            self._flag = False
-        self._shape.opacity = 127
+    def disable(self) -> None:
+        self.shape.opacity = 127
+        if self._empty:
+            self.label.text = self._default_text
 
-    def write(self, symbol: int, modifiers: int) -> None:
-        if symbol == pyglet.window.key._0:
-            self._text.text += "0"
-        elif symbol == pyglet.window.key._1:
-            self._text.text += "1"
-        elif symbol == pyglet.window.key._2:
-            self._text.text += "2"
-        elif symbol == pyglet.window.key._3:
-            self._text.text += "3"
-        elif symbol == pyglet.window.key._4:
-            self._text.text += "4"
-        elif symbol == pyglet.window.key._5:
-            self._text.text += "5"
-        elif symbol == pyglet.window.key._6:
-            self._text.text += "6"
-        elif symbol == pyglet.window.key._7:
-            self._text.text += "7"
-        elif symbol == pyglet.window.key._8:
-            self._text.text += "8"
-        elif symbol == pyglet.window.key._9:
-            self._text.text += "9"
-        elif symbol == pyglet.window.key.MINUS:
-            self._text.text += "-"
-        elif symbol == pyglet.window.key.BACKSPACE:
-            self._text.text = self._text.text[:-1]
-        else:
-            print(symbol)
+    def enable(self) -> None:
+        self.shape.opacity = 255
+        if self._empty:
+            self.label.text = ""
+
+    @property
+    def shape(self) -> Shape.Base:
+        return self._shape
+
+    @property
+    def label(self) -> Text.Label:
+        return self._label
 
     @property
     def text(self) -> str:
-        return self._text.text if self._flag else ""
+        return self._label.text if not self._empty else ""
+
+    def write(self, symbol: int, modifiers: int) -> None:
+        if symbol == pyglet.window.key._0:
+            self.label.text += "0"
+        elif symbol == pyglet.window.key._1:
+            self.label.text += "1"
+        elif symbol == pyglet.window.key._2:
+            self.label.text += "2"
+        elif symbol == pyglet.window.key._3:
+            self.label.text += "3"
+        elif symbol == pyglet.window.key._4:
+            self.label.text += "4"
+        elif symbol == pyglet.window.key._5:
+            self.label.text += "5"
+        elif symbol == pyglet.window.key._6:
+            self.label.text += "6"
+        elif symbol == pyglet.window.key._7:
+            self.label.text += "7"
+        elif symbol == pyglet.window.key._8:
+            self.label.text += "8"
+        elif symbol == pyglet.window.key._9:
+            self.label.text += "9"
+        elif symbol == pyglet.window.key.MINUS:
+            self.label.text += "-"
+        elif symbol == pyglet.window.key.BACKSPACE:
+            self.label.text = self._label.text[:-1]
+        self._empty = not self.label.text
 
 
 class Window(pyglet.window.Window):
@@ -261,19 +334,22 @@ class Window(pyglet.window.Window):
                 sample_buffers=1, samples=4
             ),  # anti-aliasing
         )
-        self._batch = pyglet.graphics.Batch()
-        self._objects = WinBlock("main", self)
+        self._canvas = Canvas()
+        self._objects = WinBlock()
+        self._objects._set_canvas(self._canvas)
         self._input: Input | None = None
 
     def __getitem__(self, name: str) -> WinObj:
         return self._objects[name]
 
+    def __setitem__(self, name: str, obj: WinObj | None) -> None:
+        self._objects[name] = obj
+
     def __contains__(self, name: str) -> bool:
         return name in self._objects
 
-    @property
-    def batch(self) -> pyglet.graphics.Batch:
-        return self._batch
+    def all(self) -> Generator[WinObj]:
+        return self._objects.all()
 
     @property
     def input(self) -> Input | None:
@@ -283,15 +359,9 @@ class Window(pyglet.window.Window):
     def input(self, input: Input | None) -> None:
         self._input = input
 
-    def reg_obj(self, obj: WinObj) -> None:
-        self._objects.reg_obj(obj)
-
-    def remove_obj(self, name: str) -> None:
-        self._objects.remove_obj(name)
-
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         if self._input:
-            self._input.deact()
+            self._input.disable()
         for obj in self._objects.all():
             if isinstance(obj, ActiveObj) and (x, y) in obj:
                 return obj.act()
@@ -304,7 +374,7 @@ class Window(pyglet.window.Window):
 
     def on_draw(self) -> None:
         self.clear()
-        self._batch.draw()
+        self._canvas.draw()
         pyglet.gl.glFlush()
 
     def set_loading_cursor(self) -> None:
