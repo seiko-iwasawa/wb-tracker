@@ -2,6 +2,7 @@ import calendar
 import datetime
 import weakref
 from collections.abc import Callable
+from typing import Generator
 
 import utils
 import win
@@ -114,7 +115,7 @@ class Info(win.Text):
     @info.setter
     def info(self, text: str) -> None:
         self.label.text = text
-        self._window.on_draw()
+        # self._window.on_draw()
 
 
 class MainWindow(win.Window):
@@ -129,11 +130,11 @@ class MainWindow(win.Window):
         self._menu = Menu(
             self,
             [
-                ("Добавить артикулы", self._add_products),
+                ("Добавить артикулы", lambda: self.loading(self._add_products)),
                 ("Добавить продажи", self._add_sales),
-                ("Выгрузить товары", self._download_products),
+                ("Выгрузить товары", lambda: self.loading(self._download_products)),
                 ("Выгрузить продажи", self._download_sales),
-                ("Построить график", self._build_plot),
+                ("Построить график", lambda: self.loading(self._build_plot)),
             ],
         )
         self._output = Info(self)
@@ -156,13 +157,14 @@ class MainWindow(win.Window):
         self["body"] = None
         self.on_draw()
 
-    def _add_products(self) -> None:
-        self.set_loading_cursor()
+    def _add_products(self) -> Generator:
         self._output.info = "загрузка..."
+        yield
         for info in utils.add_products():
             self._output.info = info
+            yield
         self._output.info = "загрузка артикулов завершена"
-        self.unset_loading_cursor()
+        yield
 
     def _add_sales(self) -> None:
         self._clear_body()
@@ -171,24 +173,23 @@ class MainWindow(win.Window):
         body["wb"] = win.TextButton(
             win.Shape.RoundedRectangle(600, 585, 100, 100, 10, color=(148, 0, 216)),
             win.Text.Label("WB", font_size=14),
-            self._add_sales_from,
-            "wb",
+            lambda: self.loading(lambda: self._add_sales_from("wb")),
         )
         body["ozon"] = win.TextButton(
             win.Shape.RoundedRectangle(750, 585, 100, 100, 10, color=(71, 0, 254)),
             win.Text.Label("OZON", font_size=14),
-            self._add_sales_from,
-            "ozon",
+            lambda: self.loading(lambda: self._add_sales_from("ozon")),
         )
 
-    def _add_sales_from(self, store: str) -> None:
-        self.set_loading_cursor()
+    def _add_sales_from(self, store: str) -> Generator:
         self._output.info = "загрузка..."
+        yield
         warnings: list[str] = []
         for info in utils.add_sales(store):
             self._output.info = info
             if info.startswith("warning"):
                 warnings.append(info)
+            yield
         self._output.info = "загрузка продаж завершена"
         if warnings:
             self._clear_body()
@@ -206,27 +207,29 @@ class MainWindow(win.Window):
                     multiline=True,
                 ),
             )
-        self.unset_loading_cursor()
+        yield
 
-    def _download_products(self) -> None:
-        self.set_loading_cursor()
+    def _download_products(self) -> Generator:
         self._clear_body()
         self._output.info = "выгрузка..."
+        yield
         file = utils.download_products()
         self._output.info = f"выгрузка товаров завершена ({file})"
+        yield
         utils.appopen(file)
-        self.unset_loading_cursor()
 
     def _download_sales(self) -> None:
         self._clear_body()
-        self["body"] = PeriodChooser(self._download_sales_for_period)
+        self["body"] = PeriodChooser(
+            lambda: self.loading(self._download_sales_for_period)
+        )
 
-    def _download_sales_for_period(self) -> None:
-        self.set_loading_cursor()
+    def _download_sales_for_period(self) -> Generator:
         assert isinstance(period := self["body"], PeriodChooser)
         year, month = period._year, period._month
         self._clear_body()
         self._output.info = "выгрузка..."
+        yield
         start = datetime.datetime(year, month, 1)
         end = start + datetime.timedelta(
             days=calendar.monthrange(year, month)[1], seconds=-1
@@ -234,12 +237,12 @@ class MainWindow(win.Window):
         file = utils.download_sales(start, end)
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
-        self.unset_loading_cursor()
+        yield
 
-    def _build_plot(self):
-        self.set_loading_cursor()
+    def _build_plot(self) -> Generator:
+        yield
         utils.build_plot(self._input_field.text)
-        self.unset_loading_cursor()
+        yield
 
 
 def main():

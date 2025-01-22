@@ -376,10 +376,10 @@ class Window(pyglet.window.Window):
         self._canvas.draw()
         pyglet.gl.glFlush()
 
-    def set_loading_cursor(self) -> None:
+    def loading(self, process: Callable[..., Generator]) -> None:
         self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_WAIT))
-
-    def unset_loading_cursor(self) -> None:
+        for _ in process():
+            self.on_draw()
         self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_DEFAULT))
 
     def run(self) -> None:
