@@ -10,7 +10,7 @@ import win
 
 class PeriodChooser(win.WinBlock):
 
-    def __init__(self, action: Callable) -> None:
+    def __init__(self) -> None:
         super().__init__()
         weak_self = weakref.proxy(self)
         self._year = 2025
@@ -18,7 +18,7 @@ class PeriodChooser(win.WinBlock):
         self._year_label = win.Text(
             win.Text.Label(
                 str(self._year),
-                630,
+                630 + 40,
                 670,
                 0,
                 160,
@@ -31,7 +31,7 @@ class PeriodChooser(win.WinBlock):
         self._month_label = win.Text(
             win.Text.Label(
                 utils.month_names[self._month - 1],
-                630,
+                630 + 40,
                 590,
                 0,
                 160,
@@ -43,28 +43,23 @@ class PeriodChooser(win.WinBlock):
         )
         self["year"] = self._year_label
         self["month"] = self._month_label
-        self["OK"] = win.TextButton(
-            win.Shape.RoundedRectangle(850, 585, 100, 100, 10, color=(148, 0, 216)),
-            win.Text.Label("OK", font_size=14),
-            action,
-        )
         self["year-down"] = win.TextButton(
-            win.Shape.RoundedRectangle(600, 655, 40, 40, 5, color=(148, 0, 216)),
+            win.Shape.RoundedRectangle(600 + 40, 655, 40, 40, 5, color=(148, 0, 216)),
             win.Text.Label("<", font_size=14),
             lambda: weak_self._year_shift(-1),
         )
         self["year-up"] = win.TextButton(
-            win.Shape.RoundedRectangle(780, 655, 40, 40, 5, color=(148, 0, 216)),
+            win.Shape.RoundedRectangle(780 + 40, 655, 40, 40, 5, color=(148, 0, 216)),
             win.Text.Label(">", font_size=14),
             lambda: weak_self._year_shift(+1),
         )
         self["month-down"] = win.TextButton(
-            win.Shape.RoundedRectangle(600, 575, 40, 40, 5, color=(148, 0, 216)),
+            win.Shape.RoundedRectangle(600 + 40, 575, 40, 40, 5, color=(148, 0, 216)),
             win.Text.Label("<", font_size=14),
             lambda: weak_self._month_shift(-1),
         )
         self["month-up"] = win.TextButton(
-            win.Shape.RoundedRectangle(780, 575, 40, 40, 5, color=(148, 0, 216)),
+            win.Shape.RoundedRectangle(780 + 40, 575, 40, 40, 5, color=(148, 0, 216)),
             win.Text.Label(">", font_size=14),
             lambda: weak_self._month_shift(+1),
         )
@@ -220,20 +215,48 @@ class MainWindow(win.Window):
 
     def _download_sales(self) -> None:
         self._clear_body()
-        self["body"] = PeriodChooser(
-            lambda: self.loading(self._download_sales_for_period)
+        self["body"] = win.WinBlock()
+        self["body"]["period"] = PeriodChooser()
+        self["body"]["for_year"] = win.TextButton(
+            win.Shape.RoundedRectangle(
+                100 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
+            ),
+            win.Text.Label("За год", font_size=14),
+            lambda: self.loading(self._download_sales_for_year),
+        )
+        self["body"]["or"] = win.Text(
+            win.Text.Label("или", 230 + 500, 115 + 400, color=(0, 0, 0), font_size=14)
+        )
+        self["body"]["for_month"] = win.TextButton(
+            win.Shape.RoundedRectangle(
+                300 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
+            ),
+            win.Text.Label("За месяц", font_size=14),
+            lambda: self.loading(self._download_sales_for_month),
         )
 
-    def _download_sales_for_period(self) -> Generator:
+    def _download_sales_for_year(self) -> Generator:
+        assert isinstance(period := self["body"]["period"], PeriodChooser)
+        year = period._year
+        start = datetime.datetime(year, 1, 1)
+        end = datetime.datetime(year + 1, 1, 1) + datetime.timedelta(seconds=-1)
+        return self._download_sales_for_period(start, end)
+
+    def _download_sales_for_month(self) -> Generator:
         assert isinstance(period := self["body"], PeriodChooser)
         year, month = period._year, period._month
-        self._clear_body()
-        self._output.info = "выгрузка..."
-        yield
         start = datetime.datetime(year, month, 1)
         end = start + datetime.timedelta(
             days=calendar.monthrange(year, month)[1], seconds=-1
         )
+        return self._download_sales_for_period(start, end)
+
+    def _download_sales_for_period(
+        self, start: datetime.datetime, end: datetime.datetime
+    ) -> Generator:
+        self._clear_body()
+        self._output.info = "выгрузка..."
+        yield
         file = utils.download_sales(start, end)
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
