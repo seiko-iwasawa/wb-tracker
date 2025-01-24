@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator, Iterator
 from itertools import chain
 
+import winkeyboard
 import pyglet
 
 Canvas = pyglet.graphics.Batch
@@ -299,30 +300,12 @@ class Input(ActiveObj):
         return self.label.text if not self._empty else ""
 
     def write(self, symbol: int, modifiers: int) -> None:
-        if symbol == pyglet.window.key._0:
-            self.label.text += "0"
-        elif symbol == pyglet.window.key._1:
-            self.label.text += "1"
-        elif symbol == pyglet.window.key._2:
-            self.label.text += "2"
-        elif symbol == pyglet.window.key._3:
-            self.label.text += "3"
-        elif symbol == pyglet.window.key._4:
-            self.label.text += "4"
-        elif symbol == pyglet.window.key._5:
-            self.label.text += "5"
-        elif symbol == pyglet.window.key._6:
-            self.label.text += "6"
-        elif symbol == pyglet.window.key._7:
-            self.label.text += "7"
-        elif symbol == pyglet.window.key._8:
-            self.label.text += "8"
-        elif symbol == pyglet.window.key._9:
-            self.label.text += "9"
-        elif symbol == pyglet.window.key.MINUS:
-            self.label.text += "-"
-        elif symbol == pyglet.window.key.BACKSPACE:
+        if winkeyboard.to_delete_all(symbol, modifiers):
+            self.label.text = ""
+        elif winkeyboard.to_delete_symbol(symbol, modifiers):
             self.label.text = self.label.text[:-1]
+        else:
+            self.label.text += winkeyboard.get_symbol(symbol, modifiers)
         self._empty = not self.label.text
 
 
