@@ -154,6 +154,7 @@ class MainWindow(win.Window):
 
     def _add_products(self) -> Generator:
         self._output.info = "загрузка..."
+        self.need_redraw()
         yield
         for info in utils.add_products():
             self._output.info = info
@@ -178,6 +179,7 @@ class MainWindow(win.Window):
 
     def _add_sales_from(self, store: str) -> Generator:
         self._output.info = "загрузка..."
+        self.need_redraw()
         yield
         warnings: list[str] = []
         for info in utils.add_sales(store):
@@ -207,6 +209,7 @@ class MainWindow(win.Window):
     def _download_products(self) -> Generator:
         self._clear_body()
         self._output.info = "выгрузка..."
+        self.need_redraw()
         yield
         file = utils.download_products()
         self._output.info = f"выгрузка товаров завершена ({file})"
@@ -256,6 +259,7 @@ class MainWindow(win.Window):
     ) -> Generator:
         self._clear_body()
         self._output.info = "выгрузка..."
+        self.need_redraw()
         yield
         file = utils.download_sales(start, end)
         self._output.info = f"выгрузка товаров завершена ({file})"

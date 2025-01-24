@@ -1,6 +1,7 @@
 import weakref
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Generator, Iterator
+from itertools import chain
 
 import pyglet
 
@@ -337,6 +338,8 @@ class Window(pyglet.window.Window):
         self._objects = WinBlock()
         self._objects._set_canvas(self._canvas)
         self._input: Input | None = None
+        self._queue: Iterator = iter(())
+        self._redraw_flag: bool = True
 
     def __getitem__(self, name: str) -> WinObj:
         return self._objects[name]
@@ -375,14 +378,23 @@ class Window(pyglet.window.Window):
         self.clear()
         self._canvas.draw()
         pyglet.gl.glFlush()
+        self._redraw_flag = True
 
-    def loading(self, process: Callable[..., Generator]) -> None:
-        self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_WAIT))
-        for _ in process():
-            self.on_draw()
-        self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_DEFAULT))
+    def loading(self, process: Callable[..., Iterator]) -> None:
+        self._queue = chain(self._queue, process())
+
+    def need_redraw(self) -> None:
+        self._redraw_flag = False
+
+    def _queue_update(self, dt: float) -> None:
+        try:
+            if self._redraw_flag:
+                next(self._queue)
+        except StopIteration:
+            pass
 
     def run(self) -> None:
+        pyglet.clock.schedule(self._queue_update)
         pyglet.app.run(1 / 30)
 
     def exit(self) -> None:
