@@ -230,7 +230,7 @@ class MainWindow(Window):
         year = int(year_option.option.label.text)
         start = datetime.datetime(year, 1, 1)
         end = datetime.datetime(year + 1, 1, 1) + datetime.timedelta(seconds=-1)
-        return self._download_sales_for_period(start, end)
+        return self._download_sales_for_period(start, end, f"Продажи {year}")
 
     def _download_sales_for_month(self) -> Generator:
         assert isinstance(body := self["body"], WinBlock)
@@ -241,16 +241,16 @@ class MainWindow(Window):
         end = start + datetime.timedelta(
             days=calendar.monthrange(year, month)[1], seconds=-1
         )
-        return self._download_sales_for_period(start, end)
+        return self._download_sales_for_period(start, end, f"Продажи {month // 10}{month % 10}.{year % 100}")
 
     def _download_sales_for_period(
-        self, start: datetime.datetime, end: datetime.datetime
+        self, start: datetime.datetime, end: datetime.datetime, filename: str
     ) -> Generator:
         self._clear_body()
         self._output.info = "выгрузка..."
         self.need_redraw()
         yield
-        file = utils.download_sales(start, end)
+        file = utils.download_sales(start, end, filename)
         self._output.info = f"выгрузка товаров завершена ({file})"
         utils.appopen(file)
         yield

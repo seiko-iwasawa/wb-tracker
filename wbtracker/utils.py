@@ -146,7 +146,7 @@ def get_df_products() -> pd.DataFrame:
 
 
 def download_products() -> str:
-    df_to_xlsx(get_df_products(), file := gen_download_file("products", "xlsx"))
+    df_to_xlsx(get_df_products(), file := gen_download_file("Данные о товарах", "xlsx"))
     return str(file)
 
 
@@ -172,8 +172,9 @@ def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFra
     df["profit"] = df["sum"] - df["cost"] * df["n"]
     df = (
         df.drop(["brand", "price", "cost"], axis=1)
+        .sort_values("n", ascending=False)
         .rename(
-            {
+            columns={
                 "store": "Магазин",
                 "id": "Артикул",
                 "vendor_code": "Код продавца",
@@ -183,13 +184,14 @@ def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFra
                 "profit": "Прибыль",
             }
         )
-        .sort_values("n", ascending=False)
     )
     return df
 
 
-def download_sales(start: datetime.datetime, end: datetime.datetime) -> str:
-    df_to_xlsx(get_df_sales(start, end), file := gen_download_file("sales", "xlsx"))
+def download_sales(
+    start: datetime.datetime, end: datetime.datetime, filename: str
+) -> str:
+    df_to_xlsx(get_df_sales(start, end), file := gen_download_file(filename, "xlsx"))
     return str(file)
 
 
