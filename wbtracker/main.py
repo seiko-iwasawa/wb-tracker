@@ -5,30 +5,30 @@ from collections.abc import Callable
 from typing import Generator
 
 import utils
-import win
+from win import *
 
 
-class ListSwitcher(win.WinBlock):
+class ListSwitcher(WinBlock):
 
     def __init__(self, options: list[str], x: int, y: int, length: int) -> None:
         super().__init__()
         self._options = options
         self._ind = 0
         weak_self = weakref.proxy(self)
-        self["left"] = win.TextButton(
-            win.Shape.RoundedRectangle(x, y, 40, 40, 5, color=(148, 0, 216)),
-            win.Text.Label("<", font_size=14),
+        self["left"] = TextButton(
+            Shape.RoundedRectangle(x, y, 40, 40, 5, color=(148, 0, 216)),
+            Text.Label("<", font_size=14),
             lambda: weak_self._left(),
         )
-        self["right"] = win.TextButton(
-            win.Shape.RoundedRectangle(
+        self["right"] = TextButton(
+            Shape.RoundedRectangle(
                 x + 40 + length, y, 40, 40, 5, color=(148, 0, 216)
             ),
-            win.Text.Label(">", font_size=14),
+            Text.Label(">", font_size=14),
             lambda: weak_self._right(),
         )
-        self["option"] = win.Text(
-            win.Text.Label(
+        self["option"] = Text(
+            Text.Label(
                 "",
                 x + 40,
                 y + 13,
@@ -43,8 +43,8 @@ class ListSwitcher(win.WinBlock):
         self._update_option()
 
     @property
-    def option(self) -> win.Text:
-        assert isinstance(res := self["option"], win.Text)
+    def option(self) -> Text:
+        assert isinstance(res := self["option"], Text)
         return res
 
     def _update_option(self) -> None:
@@ -59,17 +59,17 @@ class ListSwitcher(win.WinBlock):
         self._update_option()
 
 
-class Menu(win.WinBlock):
+class Menu(WinBlock):
 
     def __init__(
-        self, window: "win.Window", buttons: list[tuple[str, Callable]]
+        self, window: "Window", buttons: list[tuple[str, Callable]]
     ) -> None:
         super().__init__()
         window["menu"] = self
         for n, button in enumerate(buttons):
             i, j = n // 2, n % 2
-            self[f"{i}-{j}"] = win.TextButton(
-                win.Shape.RoundedRectangle(
+            self[f"{i}-{j}"] = TextButton(
+                Shape.RoundedRectangle(
                     100 + j * 250,
                     650 - 80 * i,
                     200,
@@ -77,15 +77,15 @@ class Menu(win.WinBlock):
                     10,
                     color=(148, 0, 216),
                 ),
-                win.Text.Label(button[0], font_size=14),
+                Text.Label(button[0], font_size=14),
                 button[1],
             )
 
 
-class Info(win.Text):
+class Info(Text):
 
-    def __init__(self, window: "win.Window") -> None:
-        super().__init__(win.Text.Label("", 30, 30, color=(0, 0, 0)))
+    def __init__(self, window: "Window") -> None:
+        super().__init__(Text.Label("", 30, 30, color=(0, 0, 0)))
         window["output"] = self
         self._window = window
 
@@ -99,14 +99,14 @@ class Info(win.Text):
         # self._window.on_draw()
 
 
-class MainWindow(win.Window):
+class MainWindow(Window):
 
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
-        self.set_icon(win.Image.load("icon.png"))
-        self._background = win.Background(self, (255, 255, 255))
-        self["top-line"] = win.Shape(
-            win.Shape.Line(0, 720, 1080, 720, 3, (148, 0, 216))
+        self.set_icon(Image.load("icon.png"))
+        self._background = Background(self, (255, 255, 255))
+        self["top-line"] = Shape(
+            Shape.Line(0, 720, 1080, 720, 3, (148, 0, 216))
         )
         self._menu = Menu(
             self,
@@ -119,9 +119,9 @@ class MainWindow(win.Window):
             ],
         )
         self._output = Info(self)
-        self._input_field = win.Input(
+        self._input_field = Input(
             self,
-            win.Shape.RoundedRectangle(
+            Shape.RoundedRectangle(
                 350,
                 490,
                 200,
@@ -129,7 +129,7 @@ class MainWindow(win.Window):
                 10,
                 color=(148, 0, 216),
             ),
-            win.Text.Label(font_size=14),
+            Text.Label(font_size=14),
             "введите артикул...",
         )
         self["input"] = self._input_field
@@ -150,16 +150,16 @@ class MainWindow(win.Window):
 
     def _add_sales(self) -> None:
         self._clear_body()
-        body = win.WinBlock()
+        body = WinBlock()
         self["body"] = body
-        body["wb"] = win.TextButton(
-            win.Shape.RoundedRectangle(600, 585, 100, 100, 10, color=(148, 0, 216)),
-            win.Text.Label("WB", font_size=14),
+        body["wb"] = TextButton(
+            Shape.RoundedRectangle(600, 585, 100, 100, 10, color=(148, 0, 216)),
+            Text.Label("WB", font_size=14),
             lambda: self.loading(lambda: self._add_sales_from("wb")),
         )
-        body["ozon"] = win.TextButton(
-            win.Shape.RoundedRectangle(750, 585, 100, 100, 10, color=(71, 0, 254)),
-            win.Text.Label("OZON", font_size=14),
+        body["ozon"] = TextButton(
+            Shape.RoundedRectangle(750, 585, 100, 100, 10, color=(71, 0, 254)),
+            Text.Label("OZON", font_size=14),
             lambda: self.loading(lambda: self._add_sales_from("ozon")),
         )
 
@@ -176,8 +176,8 @@ class MainWindow(win.Window):
         self._output.info = "загрузка продаж завершена"
         if warnings:
             self._clear_body()
-            self["body"] = win.Text(
-                win.Text.Label(
+            self["body"] = Text(
+                Text.Label(
                     "\n".join(
                         [f"{len(warnings)} предупреждений. Первые из них:\n"]
                         + warnings[:10]
@@ -204,7 +204,7 @@ class MainWindow(win.Window):
 
     def _download_sales(self) -> None:
         self._clear_body()
-        self["body"] = (body := win.WinBlock())
+        self["body"] = (body := WinBlock())
         body["year"] = ListSwitcher(
             list(map(str, list(range(2025, 3000)) + list(range(2000, 2025)))),
             630,
@@ -212,26 +212,26 @@ class MainWindow(win.Window):
             160,
         )
         body["month"] = ListSwitcher(utils.month_names, 630, 570, 160)
-        body["for_year"] = win.TextButton(
-            win.Shape.RoundedRectangle(
+        body["for_year"] = TextButton(
+            Shape.RoundedRectangle(
                 100 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
             ),
-            win.Text.Label("За год", font_size=14),
+            Text.Label("За год", font_size=14),
             lambda: self.loading(self._download_sales_for_year),
         )
-        body["or"] = win.Text(
-            win.Text.Label("или", 230 + 500, 115 + 400, color=(0, 0, 0), font_size=14)
+        body["or"] = Text(
+            Text.Label("или", 230 + 500, 115 + 400, color=(0, 0, 0), font_size=14)
         )
-        body["for_month"] = win.TextButton(
-            win.Shape.RoundedRectangle(
+        body["for_month"] = TextButton(
+            Shape.RoundedRectangle(
                 300 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
             ),
-            win.Text.Label("За месяц", font_size=14),
+            Text.Label("За месяц", font_size=14),
             lambda: self.loading(self._download_sales_for_month),
         )
 
     def _download_sales_for_year(self) -> Generator:
-        assert isinstance(body := self["body"], win.WinBlock)
+        assert isinstance(body := self["body"], WinBlock)
         assert isinstance(year_option := body["year"], ListSwitcher)
         year = int(year_option.option.label.text)
         start = datetime.datetime(year, 1, 1)
@@ -239,7 +239,7 @@ class MainWindow(win.Window):
         return self._download_sales_for_period(start, end)
 
     def _download_sales_for_month(self) -> Generator:
-        assert isinstance(body := self["body"], win.WinBlock)
+        assert isinstance(body := self["body"], WinBlock)
         assert isinstance(year_option := body["year"], ListSwitcher)
         assert isinstance(month_option := body["month"], ListSwitcher)
         year, month = int(year_option.option.label.text), month_option._ind + 1
