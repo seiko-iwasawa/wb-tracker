@@ -7,6 +7,10 @@ from typing import Generator
 import utils
 from win import *
 
+WBC = (148, 0, 216)
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
 
 class ListSwitcher(WinBlock):
 
@@ -16,14 +20,12 @@ class ListSwitcher(WinBlock):
         self._ind = 0
         weak_self = weakref.proxy(self)
         self["left"] = TextButton(
-            Shape.RoundedRectangle(x, y, 40, 40, 5, color=(148, 0, 216)),
+            Shape.RoundedRectangle(x, y, 40, 40, 5, color=WBC),
             Text.Label("<", font_size=14),
             lambda: weak_self._left(),
         )
         self["right"] = TextButton(
-            Shape.RoundedRectangle(
-                x + 40 + length, y, 40, 40, 5, color=(148, 0, 216)
-            ),
+            Shape.RoundedRectangle(x + 40 + length, y, 40, 40, 5, color=WBC),
             Text.Label(">", font_size=14),
             lambda: weak_self._right(),
         )
@@ -36,7 +38,7 @@ class ListSwitcher(WinBlock):
                 length,
                 40,
                 align="center",
-                color=(0, 0, 0),
+                color=BLACK,
                 font_size=14,
             )
         )
@@ -61,9 +63,7 @@ class ListSwitcher(WinBlock):
 
 class Menu(WinBlock):
 
-    def __init__(
-        self, window: "Window", buttons: list[tuple[str, Callable]]
-    ) -> None:
+    def __init__(self, window: "Window", buttons: list[tuple[str, Callable]]) -> None:
         super().__init__()
         window["menu"] = self
         for n, button in enumerate(buttons):
@@ -75,7 +75,7 @@ class Menu(WinBlock):
                     200,
                     50,
                     10,
-                    color=(148, 0, 216),
+                    color=WBC,
                 ),
                 Text.Label(button[0], font_size=14),
                 button[1],
@@ -85,7 +85,7 @@ class Menu(WinBlock):
 class Info(Text):
 
     def __init__(self, window: "Window") -> None:
-        super().__init__(Text.Label("", 30, 30, color=(0, 0, 0)))
+        super().__init__(Text.Label("", 30, 30, color=BLACK))
         window["output"] = self
         self._window = window
 
@@ -104,10 +104,8 @@ class MainWindow(Window):
     def __init__(self) -> None:
         super().__init__(1080, 720, "WB Tracker")
         self.set_icon(Image.load("icon.png"))
-        self._background = Background(self, (255, 255, 255))
-        self["top-line"] = Shape(
-            Shape.Line(0, 720, 1080, 720, 3, (148, 0, 216))
-        )
+        self._background = Background(self, WHITE)
+        self["top-line"] = Shape(Shape.Line(0, 720, 1080, 720, 3, WBC))
         self._menu = Menu(
             self,
             [
@@ -127,7 +125,7 @@ class MainWindow(Window):
                 200,
                 50,
                 10,
-                color=(148, 0, 216),
+                color=WBC,
             ),
             Text.Label(font_size=14),
             "введите артикул...",
@@ -153,7 +151,7 @@ class MainWindow(Window):
         body = WinBlock()
         self["body"] = body
         body["wb"] = TextButton(
-            Shape.RoundedRectangle(600, 585, 100, 100, 10, color=(148, 0, 216)),
+            Shape.RoundedRectangle(600, 585, 100, 100, 10, color=WBC),
             Text.Label("WB", font_size=14),
             lambda: self.loading(lambda: self._add_sales_from("wb")),
         )
@@ -186,7 +184,7 @@ class MainWindow(Window):
                     400,
                     width=800,
                     font_size=14,
-                    color=(0, 0, 0),
+                    color=BLACK,
                     multiline=True,
                 ),
             )
@@ -213,19 +211,15 @@ class MainWindow(Window):
         )
         body["month"] = ListSwitcher(utils.month_names, 630, 570, 160)
         body["for_year"] = TextButton(
-            Shape.RoundedRectangle(
-                100 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
-            ),
+            Shape.RoundedRectangle(100 + 500, 100 + 400, 100, 40, 10, color=WBC),
             Text.Label("За год", font_size=14),
             lambda: self.loading(self._download_sales_for_year),
         )
         body["or"] = Text(
-            Text.Label("или", 230 + 500, 115 + 400, color=(0, 0, 0), font_size=14)
+            Text.Label("или", 230 + 500, 115 + 400, color=BLACK, font_size=14)
         )
         body["for_month"] = TextButton(
-            Shape.RoundedRectangle(
-                300 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
-            ),
+            Shape.RoundedRectangle(300 + 500, 100 + 400, 100, 40, 10, color=WBC),
             Text.Label("За месяц", font_size=14),
             lambda: self.loading(self._download_sales_for_month),
         )
