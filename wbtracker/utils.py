@@ -308,6 +308,8 @@ def get_ABC() -> tuple[int, int, int]:
             ascending=False
         )
     )
+    if not sales:
+        return 0, 0, 0
     s = sum(sales)
     a = 0
     while sum(sales[:a]) < 0.8 * sum(sales):
