@@ -18,6 +18,7 @@ class WinObj(ABC):
 
     @property
     def name(self) -> str:
+        assert self._name
         return self._name
 
     def _set_name(self, name: str) -> None:
