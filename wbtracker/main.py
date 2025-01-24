@@ -8,69 +8,55 @@ import utils
 import win
 
 
-class PeriodChooser(win.WinBlock):
+class ListSwitcher(win.WinBlock):
 
-    def __init__(self) -> None:
+    def __init__(self, options: list[str], x: int, y: int, length: int) -> None:
         super().__init__()
+        self._options = options
+        self._ind = 0
         weak_self = weakref.proxy(self)
-        self._year = 2025
-        self._month = 1
-        self._year_label = win.Text(
+        self["left"] = win.TextButton(
+            win.Shape.RoundedRectangle(x, y, 40, 40, 5, color=(148, 0, 216)),
+            win.Text.Label("<", font_size=14),
+            lambda: weak_self._left(),
+        )
+        self["right"] = win.TextButton(
+            win.Shape.RoundedRectangle(
+                x + 40 + length, y, 40, 40, 5, color=(148, 0, 216)
+            ),
+            win.Text.Label(">", font_size=14),
+            lambda: weak_self._right(),
+        )
+        self["option"] = win.Text(
             win.Text.Label(
-                str(self._year),
-                630 + 40,
-                670,
+                "",
+                x + 40,
+                y + 13,
                 0,
-                160,
-                100,
+                length,
+                40,
                 align="center",
                 color=(0, 0, 0),
                 font_size=14,
-            ),
+            )
         )
-        self._month_label = win.Text(
-            win.Text.Label(
-                utils.month_names[self._month - 1],
-                630 + 40,
-                590,
-                0,
-                160,
-                100,
-                align="center",
-                color=(0, 0, 0),
-                font_size=14,
-            ),
-        )
-        self["year"] = self._year_label
-        self["month"] = self._month_label
-        self["year-down"] = win.TextButton(
-            win.Shape.RoundedRectangle(600 + 40, 655, 40, 40, 5, color=(148, 0, 216)),
-            win.Text.Label("<", font_size=14),
-            lambda: weak_self._year_shift(-1),
-        )
-        self["year-up"] = win.TextButton(
-            win.Shape.RoundedRectangle(780 + 40, 655, 40, 40, 5, color=(148, 0, 216)),
-            win.Text.Label(">", font_size=14),
-            lambda: weak_self._year_shift(+1),
-        )
-        self["month-down"] = win.TextButton(
-            win.Shape.RoundedRectangle(600 + 40, 575, 40, 40, 5, color=(148, 0, 216)),
-            win.Text.Label("<", font_size=14),
-            lambda: weak_self._month_shift(-1),
-        )
-        self["month-up"] = win.TextButton(
-            win.Shape.RoundedRectangle(780 + 40, 575, 40, 40, 5, color=(148, 0, 216)),
-            win.Text.Label(">", font_size=14),
-            lambda: weak_self._month_shift(+1),
-        )
+        self._update_option()
 
-    def _year_shift(self, delta: int) -> None:
-        self._year += delta
-        self._year_label.label.text = str(self._year)
+    @property
+    def option(self) -> win.Text:
+        assert isinstance(res := self["option"], win.Text)
+        return res
 
-    def _month_shift(self, delta: int) -> None:
-        self._month = (self._month + delta - 1) % 12 + 1
-        self._month_label.label.text = utils.month_names[self._month - 1]
+    def _update_option(self) -> None:
+        self.option.label.text = self._options[self._ind]
+
+    def _left(self) -> None:
+        self._ind = (self._ind - 1) % len(self._options)
+        self._update_option()
+
+    def _right(self) -> None:
+        self._ind = (self._ind + 1) % len(self._options)
+        self._update_option()
 
 
 class Menu(win.WinBlock):
@@ -218,19 +204,25 @@ class MainWindow(win.Window):
 
     def _download_sales(self) -> None:
         self._clear_body()
-        self["body"] = win.WinBlock()
-        self["body"]["period"] = PeriodChooser()
-        self["body"]["for_year"] = win.TextButton(
+        self["body"] = (body := win.WinBlock())
+        body["year"] = ListSwitcher(
+            list(map(str, list(range(2025, 3000)) + list(range(2000, 2025)))),
+            630,
+            640,
+            160,
+        )
+        body["month"] = ListSwitcher(utils.month_names, 630, 570, 160)
+        body["for_year"] = win.TextButton(
             win.Shape.RoundedRectangle(
                 100 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
             ),
             win.Text.Label("За год", font_size=14),
             lambda: self.loading(self._download_sales_for_year),
         )
-        self["body"]["or"] = win.Text(
+        body["or"] = win.Text(
             win.Text.Label("или", 230 + 500, 115 + 400, color=(0, 0, 0), font_size=14)
         )
-        self["body"]["for_month"] = win.TextButton(
+        body["for_month"] = win.TextButton(
             win.Shape.RoundedRectangle(
                 300 + 500, 100 + 400, 100, 40, 10, color=(148, 0, 216)
             ),
@@ -239,15 +231,18 @@ class MainWindow(win.Window):
         )
 
     def _download_sales_for_year(self) -> Generator:
-        assert isinstance(period := self["body"]["period"], PeriodChooser)
-        year = period._year
+        assert isinstance(body := self["body"], win.WinBlock)
+        assert isinstance(year_option := body["year"], ListSwitcher)
+        year = int(year_option.option.label.text)
         start = datetime.datetime(year, 1, 1)
         end = datetime.datetime(year + 1, 1, 1) + datetime.timedelta(seconds=-1)
         return self._download_sales_for_period(start, end)
 
     def _download_sales_for_month(self) -> Generator:
-        assert isinstance(period := self["body"], PeriodChooser)
-        year, month = period._year, period._month
+        assert isinstance(body := self["body"], win.WinBlock)
+        assert isinstance(year_option := body["year"], ListSwitcher)
+        assert isinstance(month_option := body["month"], ListSwitcher)
+        year, month = int(year_option.option.label.text), month_option._ind + 1
         start = datetime.datetime(year, month, 1)
         end = start + datetime.timedelta(
             days=calendar.monthrange(year, month)[1], seconds=-1
