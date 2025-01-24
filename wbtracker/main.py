@@ -131,6 +131,18 @@ class MainWindow(Window):
             "введите артикул...",
         )
         self["input"] = self._input_field
+        self["analyze"] = TextButton(
+            Shape.RoundedRectangle(
+                100,
+                650 - 80 * 3,
+                200,
+                50,
+                10,
+                color=WBC,
+            ),
+            Text.Label("Анализ", font_size=14),
+            lambda: self.loading(self._analyze),
+        )
 
     def _clear_body(self) -> None:
         self["body"] = None
@@ -181,7 +193,7 @@ class MainWindow(Window):
                         + warnings[:10]
                     ),
                     100,
-                    400,
+                    350,
                     width=800,
                     font_size=14,
                     color=BLACK,
@@ -241,7 +253,9 @@ class MainWindow(Window):
         end = start + datetime.timedelta(
             days=calendar.monthrange(year, month)[1], seconds=-1
         )
-        return self._download_sales_for_period(start, end, f"Продажи {month // 10}{month % 10}.{year % 100}")
+        return self._download_sales_for_period(
+            start, end, f"Продажи {month // 10}{month % 10}.{year % 100}"
+        )
 
     def _download_sales_for_period(
         self, start: datetime.datetime, end: datetime.datetime, filename: str
@@ -259,6 +273,54 @@ class MainWindow(Window):
         yield
         utils.build_plot(self._input_field.text)
         yield
+
+    def _analyze(self) -> Generator:
+        self._clear_body()
+        self["body"] = (body := WinBlock())
+        self._output.info = "начинаем анализ..."
+        self.need_redraw()
+        yield
+        dynamic = utils.get_dynamic()
+        body["pop"] = Text(
+            Text.Label(
+                f"Динамика продаж: {round(dynamic, 2)}",
+                100,
+                300,
+                font_size=14,
+                color=BLACK,
+            )
+        )
+        yield
+        a, b, c = utils.get_ABC()
+        body["a"] = Text(
+            Text.Label(
+                f"Класс А: {a}% товаров приносят 80% прибыли",
+                100,
+                250,
+                font_size=14,
+                color=BLACK,
+            )
+        )
+        body["b"] = Text(
+            Text.Label(
+                f"Класс B: {b}% товаров приносят 15% прибыли",
+                100,
+                200,
+                font_size=14,
+                color=BLACK,
+            )
+        )
+        body["c"] = Text(
+            Text.Label(
+                f"Класс C: {c}% товаров приносят 5% прибыли",
+                100,
+                150,
+                font_size=14,
+                color=BLACK,
+            )
+        )
+        yield
+        self._output.info = "анализ успешно завершился"
 
 
 def main():

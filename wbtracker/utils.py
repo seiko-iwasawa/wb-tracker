@@ -256,3 +256,68 @@ month_names = [
     "Ноябрь",
     "Декабрь",
 ]
+
+
+def get_dynamic() -> float:
+
+    def get_period(date: str):
+        try:
+            date_format = "%H:%M:%S %d.%m.%Y"
+            return (
+                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
+            ).days // 90
+        except Exception:
+            date_format = "%Y-%m-%d %H:%M:%S"
+            return (
+                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
+            ).days // 90
+
+    db = database.Database()
+    sales = db.df_sales
+    products = db.df_products
+    sales = sales.merge(products, on="id")
+    sales_now = sales[sales["date"].apply(get_period) == 0]
+    sales_last = sales[sales["date"].apply(get_period) == 1]
+    now = sum(sales_now["price_x"] - sales_now["cost"])
+    last = sum(sales_last["price_x"] - sales_last["cost"])
+    return now / last if last != 0 else 1
+
+
+def get_ABC() -> tuple[int, int, int]:
+
+    def get_period(date: str):
+        try:
+            date_format = "%H:%M:%S %d.%m.%Y"
+            return (
+                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
+            ).days // 90
+        except Exception:
+            date_format = "%Y-%m-%d %H:%M:%S"
+            return (
+                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
+            ).days // 90
+
+    db = database.Database()
+    sales = db.df_sales
+    sales = sales[sales["date"].apply(get_period) == 0]
+    products = db.df_products
+    sales = sales.merge(products, on="id")
+    sales["profit"] = sales["price_x"] - sales["cost"]
+    sales = list(
+        (sales.groupby("vendor_code").agg({"profit": "sum"}))["profit"].sort_values(
+            ascending=False
+        )
+    )
+    s = sum(sales)
+    a = 0
+    while sum(sales[:a]) < 0.8 * sum(sales):
+        a += 1
+    b = a
+    while sum(sales[:b]) < 0.95 * sum(sales):
+        b += 1
+    c = len(sales)
+    return (
+        (a + 1) * 100 // len(sales),
+        (b - a + 1) * 100 // len(sales),
+        (c - b + 1) * 100 // len(sales),
+    )
