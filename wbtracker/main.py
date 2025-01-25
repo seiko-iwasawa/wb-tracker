@@ -149,13 +149,33 @@ class MainWindow(Window):
         self.on_draw()
 
     def _add_products(self) -> Generator:
+        self._clear_body()
         self._output.info = "загрузка..."
         self.need_redraw()
         yield
+        warnings: list[str] = []
         for info in utils.add_products():
             self._output.info = info
+            if info.startswith("warning"):
+                warnings.append(info)
             yield
         self._output.info = "загрузка артикулов завершена"
+        if warnings:
+            self._clear_body()
+            self["body"] = Text(
+                Text.Label(
+                    "\n".join(
+                        [f"{len(warnings)} предупреждений. Первые из них:\n"]
+                        + warnings[:10]
+                    ),
+                    100,
+                    350,
+                    width=800,
+                    font_size=14,
+                    color=BLACK,
+                    multiline=True,
+                ),
+            )
         yield
 
     def _add_sales(self) -> None:
@@ -174,6 +194,7 @@ class MainWindow(Window):
         )
 
     def _add_sales_from(self, store: str) -> Generator:
+        self._clear_body()
         self._output.info = "загрузка..."
         self.need_redraw()
         yield

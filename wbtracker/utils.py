@@ -11,18 +11,30 @@ import pandas as pd
 
 
 def read_products() -> Generator[database.Database.Product]:
+
+    def process_store(store: str) -> tuple[str, str]:
+        if store.startswith("wb") or store.startswith("вб"):
+            return "wb", store[2:]
+        elif store.startswith("oz") or store.startswith("оз"):
+            return "ozon", store[2:]
+        elif store.startswith("ozon") or store.startswith("озон"):
+            return "ozon", store[4:]
+        else:
+            return "unknown", store
+
     if not (file := askopenfile()):
         return
     for product in pd.read_excel(file.name).values:
+        store, brand = process_store(product[0])
         yield database.Database.Product(
             {
-                "store": str(product[0]),
+                "store": store,
                 "id": str(product[1]),
                 "vendor_code": "",
                 "name": "",
                 "price": -1,
                 "cost": int(product[2]),
-                "brand": "",
+                "brand": brand,
             }
         )
 
@@ -65,11 +77,19 @@ def add_product(db: database.Database, product: database.Database.Product) -> No
 
 
 def add_products() -> Generator[str]:
-    db = database.Database()
-    for product in read_products():
-        yield f"{product.key}"
-        add_product(db, product)
-    db.save()
+    try:
+        db = database.Database()
+        for product in read_products():
+            yield f"{product.key}"
+            if product._store == "unknown":
+                yield f"warning: неверно указан магазин для {product._id}"
+            elif product.cost < 0:
+                yield f"warning: себестоимость не может быть отрицательной (id: {product._id})"
+            else:
+                add_product(db, product)
+        db.save()
+    except Exception:
+        yield "warning: неправильный формат таблицы. данные не были введены"
 
 
 def add_sale(
