@@ -143,6 +143,18 @@ class MainWindow(Window):
             Text.Label("Анализ", font_size=14),
             lambda: self.loading(self._analyze),
         )
+        self["full"] = TextButton(
+            Shape.RoundedRectangle(
+                100 + 250,
+                650 - 80 * 3,
+                200,
+                50,
+                10,
+                color=WBC,
+            ),
+            Text.Label("Полный отчет", font_size=14),
+            lambda: self.loading(self._full),
+        )
 
     def _clear_body(self) -> None:
         self["body"] = None
@@ -342,6 +354,16 @@ class MainWindow(Window):
         )
         yield
         self._output.info = "анализ успешно завершился"
+
+    def _full(self) -> Generator:
+        self._clear_body()
+        self._output.info = "выгрузка..."
+        self.need_redraw()
+        yield
+        file = utils.download_full("Полный отчет")
+        self._output.info = f"выгрузка товаров завершена ({file})"
+        utils.appopen(file)
+        yield
 
 
 def main():

@@ -355,3 +355,36 @@ def get_ABC() -> tuple[int, int, int]:
         (b - a + 1) * 100 // len(sales),
         (c - b + 1) * 100 // len(sales),
     )
+
+
+def download_full(filename: str) -> str:
+
+    def short_date(date: str):
+        try:
+            date_format = "%H:%M:%S %d.%m.%Y"
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+        except Exception:
+            date_format = "%Y-%m-%d %H:%M:%S"
+            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+
+    db = database.Database()
+    sales = db.df_sales
+    products = db.df_products
+    sales["short_date"] = sales["date"].apply(short_date)
+    sales = sales.merge(products, on=["store", "id"])
+    sales = (
+        sales.groupby(["short_date", "store", "id"])
+        .agg({"date": "count", "vendor_code": "max", "name": "max", "brand": "max"})
+        .rename(columns={"date": "n"})
+        .reset_index()
+    )
+    print(sales)
+    dates = list(set(sales["short_date"]))
+    stores = list(set(sales["store"]))
+    brands = list(set(sales["brand"]))
+    df = []
+    for x in sales.values:
+        print(x)
+    file = gen_download_file(filename, "xlsx")
+    df_to_xlsx(sales, file)
+    return str(file)
