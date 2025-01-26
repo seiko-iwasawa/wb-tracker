@@ -6,6 +6,7 @@ from tkinter.filedialog import askopenfile
 
 import database
 import matplotlib.pyplot as plt
+import numpy as np
 import opener
 import pandas as pd
 
@@ -229,7 +230,7 @@ def build_plot(art: str) -> None:
     sales = db.df_sales
     products = db.df_products
     sales["short_date"] = sales["date"].apply(short_date)
-    sales = sales.merge(products, on="id")
+    sales = sales.merge(products, on=["store", "id"])
 
     month, year = map(int, datetime.date.today().strftime("%m %y").split())
     months = []
@@ -240,24 +241,35 @@ def build_plot(art: str) -> None:
             year -= 1
             month = 12
     months = months[::-1]
-    vals = [
+    wb = [
         sum(
             (sales["short_date"] == months[i])
             & (sales["vendor_code"].str.contains(art))
+            & (sales["store"] == "wb")
+        )
+        for i in range(25)
+    ]
+    ozon = [
+        sum(
+            (sales["short_date"] == months[i])
+            & (sales["vendor_code"].str.contains(art))
+            & (sales["store"] == "ozon")
         )
         for i in range(25)
     ]
 
     plt.figure(figsize=(15, 6))
-    plt.bar(
-        months,
-        vals,
-    )
-    plt.xticks(rotation=45)
-    if max(vals) <= 5:
-        plt.yticks(range(0, max(vals) + 1))
+
+    x = np.arange(25)
+
+    plt.bar(x - 0.2, wb, 0.4, color="violet")
+    plt.bar(x + 0.2, ozon, 0.4, color="blue")
+
+    plt.xticks(x, months, rotation=45)
+
     plt.xlabel("месяц")
     plt.ylabel("кол-во продаж")
+    plt.legend(["wb", "ozon"])
 
     plt.show()
 
