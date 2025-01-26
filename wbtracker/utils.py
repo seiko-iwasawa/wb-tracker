@@ -174,10 +174,13 @@ def download_products() -> str:
 def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFrame:
 
     def check_date(row: pd.Series):
-        date_format = (
-            "%H:%M:%S %d.%m.%Y" if row["store"] == "wb" else "%Y-%m-%d %H:%M:%S"
-        )
-        return start <= datetime.datetime.strptime(row["date"], date_format) <= end
+        try:
+            date_format = (
+                "%H:%M:%S %d.%m.%Y" if row["store"] == "wb" else "%Y-%m-%d %H:%M:%S"
+            )
+            return start <= datetime.datetime.strptime(row["date"], date_format) <= end
+        except Exception:
+            return False
 
     db = database.Database()
     products = db.df_products
@@ -223,8 +226,11 @@ def build_plot(art: str) -> None:
             date_format = "%H:%M:%S %d.%m.%Y"
             return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
         except Exception:
-            date_format = "%Y-%m-%d %H:%M:%S"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+            try:
+                date_format = "%Y-%m-%d %H:%M:%S"
+                return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+            except Exception:
+                return "01.01"
 
     db = database.Database()
     sales = db.df_sales
@@ -299,10 +305,14 @@ def get_dynamic() -> float:
                 datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
             ).days // 90
         except Exception:
-            date_format = "%Y-%m-%d %H:%M:%S"
-            return (
-                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
-            ).days // 90
+            try:
+                date_format = "%Y-%m-%d %H:%M:%S"
+                return (
+                    datetime.datetime.now()
+                    - datetime.datetime.strptime(date, date_format)
+                ).days // 90
+            except:
+                return 9999
 
     db = database.Database()
     sales = db.df_sales
@@ -324,10 +334,14 @@ def get_ABC() -> tuple[int, int, int]:
                 datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
             ).days // 90
         except Exception:
-            date_format = "%Y-%m-%d %H:%M:%S"
-            return (
-                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
-            ).days // 90
+            try:
+                date_format = "%Y-%m-%d %H:%M:%S"
+                return (
+                    datetime.datetime.now()
+                    - datetime.datetime.strptime(date, date_format)
+                ).days // 90
+            except:
+                return 9999
 
     db = database.Database()
     sales = db.df_sales
@@ -364,8 +378,11 @@ def download_full(filename: str) -> str:
             date_format = "%H:%M:%S %d.%m.%Y"
             return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
         except Exception:
-            date_format = "%Y-%m-%d %H:%M:%S"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+            try:
+                date_format = "%Y-%m-%d %H:%M:%S"
+                return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
+            except Exception:
+                return "01.01"
 
     db = database.Database()
     sales = db.df_sales
