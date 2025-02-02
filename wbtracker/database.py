@@ -114,20 +114,43 @@ class Database:
                 return sale
         return None
 
-    @property
-    def df_products(self) -> pd.DataFrame:
-        df = pd.DataFrame(
-            columns=["store", "id", "vendor_code", "brand", "name", "price", "cost"]
-        )
-        for i, product in enumerate(self._products):
-            for key, val in product.args.items():
-                df.loc[i, key] = val
-        return df
 
-    @property
-    def df_sales(self) -> pd.DataFrame:
-        df = pd.DataFrame(columns=["store", "sticker", "id", "date", "price"])
-        for i, product in enumerate(self._sales):
-            for key, val in product.args.items():
-                df.loc[i, key] = val
-        return df
+db = Database()
+
+
+def get_products() -> pd.DataFrame:
+    df = pd.DataFrame(
+        columns=["store", "id", "vendor_code", "brand", "name", "price", "cost"]
+    )
+    for i, product in enumerate(db._products):
+        for key, val in product.args.items():
+            df.loc[i, key] = val
+    return df
+
+
+def get_sales() -> pd.DataFrame:
+    df = pd.DataFrame(columns=["store", "sticker", "id", "date", "price"])
+    for i, sale in enumerate(db._sales):
+        for key, val in sale.args.items():
+            df.loc[i, key] = val
+    return df
+
+
+def get_full() -> pd.DataFrame:
+    products = {product.key: product for product in db._products}
+    df = pd.DataFrame(
+        columns=["store", "id", "vendor_code", "brand", "name", "date", "price", "cost"]
+    )
+    i = 0
+    for sale in db._sales:
+        if sale.product_key not in products:
+            continue
+        for key, val in sale.args.items():
+            df.loc[i, key] = val
+        product = products[sale.product_key]
+        df.loc[i, "vendor_code"] = product.vendor_code
+        df.loc[i, "brand"] = product.brand
+        df.loc[i, "name"] = product.name
+        df.loc[i, "cost"] = product.cost
+        i += 1
+    return df

@@ -70,16 +70,15 @@ def read_ozon_sales() -> Generator[tuple[database.Database.Sale, str, str, str]]
         ), str(product[4]), str(product[9]), str(product[11])
 
 
-def add_product(db: database.Database, product: database.Database.Product) -> None:
-    if db_product := db.find_product(product.key):
+def add_product(product: database.Database.Product) -> None:
+    if db_product := database.db.find_product(product.key):
         db_product.cost = product.cost
     else:
-        db.add_product(product)
+        database.db.add_product(product)
 
 
 def add_products() -> Generator[str]:
     try:
-        db = database.Database()
         for product in read_products():
             yield f"{product.key}"
             if product._store == "unknown":
@@ -87,33 +86,30 @@ def add_products() -> Generator[str]:
             elif product.cost < 0:
                 yield f"warning: себестоимость не может быть отрицательной (id: {product._id})"
             else:
-                add_product(db, product)
-        db.save()
+                add_product(product)
+        database.db.save()
     except Exception:
         yield "warning: неправильный формат таблицы. данные не были введены"
 
 
-def add_sale(
-    db: database.Database, sale: database.Database.Sale, name: str, vendor_code: str
-) -> None:
-    db.add_sale(sale)
-    if product := db.find_product(sale.product_key):
+def add_sale(sale: database.Database.Sale, name: str, vendor_code: str) -> None:
+    database.db.add_sale(sale)
+    if product := database.db.find_product(sale.product_key):
         product.name = name
         product.vendor_code = vendor_code
         product.price = sale.price
 
 
 def add_sales(store: str) -> Generator[str]:
-    db = database.Database()
     sales = read_wb_sales() if store == "wb" else read_ozon_sales()
     ok_status = "Продано" if store == "wb" else "Доставлен"
     for sale, status, name, vendor_code in sales:
         yield f"{sale.key}"
         if status == ok_status:
-            add_sale(db, sale, name, vendor_code)
-            if not db.find_product(sale.product_key):
+            add_sale(sale, name, vendor_code)
+            if not database.db.find_product(sale.product_key):
                 yield f"warning: {vendor_code} not found"
-    db.save()
+    database.db.save()
 
 
 def webopen(store: str, article: str) -> None:
@@ -149,9 +145,9 @@ def df_to_xlsx(df: pd.DataFrame, file: Path):
 
 
 def get_df_products() -> pd.DataFrame:
-    db = database.Database()
     return (
-        db.df_products.drop("brand", axis=1)
+        database.get_products()
+        .drop("brand", axis=1)
         .sort_values(by="price", ascending=False)
         .rename(
             columns={
@@ -171,6 +167,22 @@ def download_products() -> str:
     return str(file)
 
 
+def fix_date(df: pd.DataFrame, format: str):
+
+    def short_date(date: str):
+        try:
+            date_format = "%H:%M:%S %d.%m.%Y"
+            return datetime.datetime.strptime(date, date_format).strftime(format)
+        except Exception:
+            try:
+                date_format = "%Y-%m-%d %H:%M:%S"
+                return datetime.datetime.strptime(date, date_format).strftime(format)
+            except Exception:
+                return "01.01"
+
+    df["date"] = df["date"].apply(short_date)
+
+
 def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFrame:
 
     def check_date(row: pd.Series):
@@ -182,20 +194,29 @@ def get_df_sales(start: datetime.datetime, end: datetime.datetime) -> pd.DataFra
         except Exception:
             return False
 
-    db = database.Database()
-    products = db.df_products
-    sales = db.df_sales
-    sales = (
-        sales[sales.apply(check_date, axis=1)]
+    full = database.get_full()
+    print(full)
+    full = (
+        full[full.apply(check_date, axis=1)]
         .groupby(["store", "id"])
-        .agg({"price": "sum", "date": "count"})
+        .agg(
+            {
+                "vendor_code": "max",
+                "name": "max",
+                "price": "sum",
+                "date": "count",
+                "cost": "max",
+            }
+        )
         .rename(columns={"price": "sum", "date": "n"})
+        .reset_index(level=0)
     )
-    df = products.join(sales, on=["store", "id"], how="right")
+    print(full)
+    df = full
     df = df[df["n"] > 0]
     df["profit"] = df["sum"] - df["cost"] * df["n"]
     df = (
-        df.drop(["brand", "price", "cost"], axis=1)
+        df.drop(["cost"], axis=1)
         .sort_values("n", ascending=False)
         .rename(
             columns={
@@ -221,22 +242,8 @@ def download_sales(
 
 def build_plot(art: str) -> None:
 
-    def short_date(date: str):
-        try:
-            date_format = "%H:%M:%S %d.%m.%Y"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
-        except Exception:
-            try:
-                date_format = "%Y-%m-%d %H:%M:%S"
-                return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
-            except Exception:
-                return "01.01"
-
-    db = database.Database()
-    sales = db.df_sales
-    products = db.df_products
-    sales["short_date"] = sales["date"].apply(short_date)
-    sales = sales.merge(products, on=["store", "id"])
+    full = database.get_full()
+    fix_date(full, "%m.%y")
 
     month, year = map(int, datetime.date.today().strftime("%m %y").split())
     months = []
@@ -249,17 +256,17 @@ def build_plot(art: str) -> None:
     months = months[::-1]
     wb = [
         sum(
-            (sales["short_date"] == months[i])
-            & (sales["vendor_code"].str.contains(art))
-            & (sales["store"] == "wb")
+            (full["date"] == months[i])
+            & (full["vendor_code"].str.contains(art))
+            & (full["store"] == "wb")
         )
         for i in range(25)
     ]
     ozon = [
         sum(
-            (sales["short_date"] == months[i])
-            & (sales["vendor_code"].str.contains(art))
-            & (sales["store"] == "ozon")
+            (full["date"] == months[i])
+            & (full["vendor_code"].str.contains(art))
+            & (full["store"] == "ozon")
         )
         for i in range(25)
     ]
@@ -299,58 +306,32 @@ month_names = [
 def get_dynamic() -> float:
 
     def get_period(date: str):
-        try:
-            date_format = "%H:%M:%S %d.%m.%Y"
-            return (
-                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
-            ).days // 90
-        except Exception:
-            try:
-                date_format = "%Y-%m-%d %H:%M:%S"
-                return (
-                    datetime.datetime.now()
-                    - datetime.datetime.strptime(date, date_format)
-                ).days // 90
-            except:
-                return 9999
+        return (
+            datetime.datetime.now() - datetime.datetime.strptime(date, "%m.%y")
+        ).days // 90
 
-    db = database.Database()
-    sales = db.df_sales
-    products = db.df_products
-    sales = sales.merge(products, on="id")
-    sales_now = sales[sales["date"].apply(get_period) == 0]
-    sales_last = sales[sales["date"].apply(get_period) == 1]
-    now = sum(sales_now["price_x"] - sales_now["cost"])
-    last = sum(sales_last["price_x"] - sales_last["cost"])
+    full = database.get_full()
+    fix_date(full, "%m.%y")
+    sales_now = full[full["date"].apply(get_period) == 0]
+    sales_last = full[full["date"].apply(get_period) == 1]
+    now = sum(sales_now["price"] - sales_now["cost"])
+    last = sum(sales_last["price"] - sales_last["cost"])
     return now / last if last != 0 else 1
 
 
 def get_ABC() -> tuple[int, int, int]:
 
     def get_period(date: str):
-        try:
-            date_format = "%H:%M:%S %d.%m.%Y"
-            return (
-                datetime.datetime.now() - datetime.datetime.strptime(date, date_format)
-            ).days // 90
-        except Exception:
-            try:
-                date_format = "%Y-%m-%d %H:%M:%S"
-                return (
-                    datetime.datetime.now()
-                    - datetime.datetime.strptime(date, date_format)
-                ).days // 90
-            except:
-                return 9999
+        return (
+            datetime.datetime.now() - datetime.datetime.strptime(date, "%m.%y")
+        ).days // 90
 
-    db = database.Database()
-    sales = db.df_sales
-    sales = sales[sales["date"].apply(get_period) == 0]
-    products = db.df_products
-    sales = sales.merge(products, on="id")
-    sales["profit"] = sales["price_x"] - sales["cost"]
+    full = database.get_full()
+    fix_date(full, "%m.%y")
+    full = full[full["date"].apply(get_period) == 0]
+    full["profit"] = full["price"] - full["cost"]
     sales = list(
-        (sales.groupby("vendor_code").agg({"profit": "sum"}))["profit"].sort_values(
+        (full.groupby("vendor_code").agg({"profit": "sum"}))["profit"].sort_values(
             ascending=False
         )
     )
@@ -373,30 +354,16 @@ def get_ABC() -> tuple[int, int, int]:
 
 def download_full(filename: str) -> str:
 
-    def short_date(date: str):
-        try:
-            date_format = "%H:%M:%S %d.%m.%Y"
-            return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
-        except Exception:
-            try:
-                date_format = "%Y-%m-%d %H:%M:%S"
-                return datetime.datetime.strptime(date, date_format).strftime("%m.%y")
-            except Exception:
-                return "01.01"
-
-    db = database.Database()
-    sales = db.df_sales
-    products = db.df_products
-    sales["short_date"] = sales["date"].apply(short_date)
-    sales = sales.merge(products, on=["store", "id"])
+    full = database.get_full()
+    fix_date(full, "%m.%y")
     sales = (
-        sales.groupby(["short_date", "store", "id"])
-        .agg({"date": "count", "vendor_code": "max", "name": "max", "brand": "max"})
-        .rename(columns={"date": "n"})
+        full.groupby(["date", "store", "id"])
+        .agg({"price": "count", "vendor_code": "max", "name": "max", "brand": "max"})
+        .rename(columns={"price": "n"})
         .reset_index()
     )
     print(sales)
-    dates = list(set(sales["short_date"]))
+    dates = list(set(sales["date"]))
     stores = list(set(sales["store"]))
     brands = list(set(sales["brand"]))
     df = []
