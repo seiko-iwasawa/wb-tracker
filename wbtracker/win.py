@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable, Generator, Iterator
 from itertools import chain
 
-import winkeyboard
 import pyglet
+import winkeyboard
 
 Canvas = pyglet.graphics.Batch
 
@@ -365,6 +365,7 @@ class Window(pyglet.window.Window):
         self._redraw_flag = True
 
     def loading(self, process: Callable[..., Iterator]) -> None:
+        self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_WAIT))
         self._queue = chain(self._queue, process())
 
     def need_redraw(self) -> None:
@@ -376,6 +377,7 @@ class Window(pyglet.window.Window):
                 next(self._queue)
         except StopIteration:
             pass
+            self.set_mouse_cursor(self.get_system_mouse_cursor(self.CURSOR_DEFAULT))
 
     def run(self) -> None:
         pyglet.clock.schedule(self._queue_update)
