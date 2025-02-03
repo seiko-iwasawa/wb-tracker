@@ -278,6 +278,10 @@ def build_plot(art: str) -> None:
     plt.bar(x - 0.2, wb, 0.4, color="violet")
     plt.bar(x + 0.2, ozon, 0.4, color="blue")
 
+    for i in range(25):
+        plt.text(i - 0.4, wb[i], str(wb[i]), rotation=45)
+        plt.text(i, ozon[i], str(ozon[i]), rotation=45)
+
     plt.xticks(x, months, rotation=45)
 
     plt.xlabel("месяц")
