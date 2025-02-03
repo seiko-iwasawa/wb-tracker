@@ -9,65 +9,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 import opener
 import pandas as pd
+import pystore
 
 
 def read_products() -> Generator[database.Database.Product]:
-
-    def process_store(store: str) -> tuple[str, str]:
-        if store.startswith("wb") or store.startswith("вб"):
-            return "wb", store[2:]
-        elif store.startswith("oz") or store.startswith("оз"):
-            return "ozon", store[2:]
-        elif store.startswith("ozon") or store.startswith("озон"):
-            return "ozon", store[4:]
-        else:
-            return "unknown", store
-
     if not (file := askopenfile()):
         return
-    for product in pd.read_excel(file.name).values:
-        store, brand = process_store(product[0])
-        yield database.Database.Product(
-            {
-                "store": store,
-                "id": str(product[1]),
-                "vendor_code": "",
-                "name": "",
-                "price": -1,
-                "cost": int(product[2]),
-                "brand": brand,
-            }
-        )
+    for row in pd.read_excel(file.name).values:
+        yield pystore.build_product(str(row[0]), str(row[1]), int(float(row[2])))
 
 
 def read_wb_sales() -> Generator[tuple[database.Database.Sale, str, str, str]]:
     if not (file := askopenfile()):
         return
-    for product in pd.read_excel(file.name).values:
-        yield database.Database.Sale(
-            {
-                "store": "wb",
-                "sticker": str(product[2]),
-                "id": str(product[12]),
-                "date": str(product[4]),
-                "price": int(product[10]),
-            }
-        ), str(product[16]), str(product[6]), str(product[13])
+    for row in pd.read_excel(file.name).values:
+        yield pystore.WB.build_sale(list(map(str, row)))
 
 
 def read_ozon_sales() -> Generator[tuple[database.Database.Sale, str, str, str]]:
     if not (file := askopenfile()):
         return
-    for product in pd.read_csv(file.name, sep=";").values:
-        yield database.Database.Sale(
-            {
-                "store": "ozon",
-                "sticker": str(product[0]),
-                "id": str(product[10]),
-                "date": str(product[5]),
-                "price": int(product[7]),
-            }
-        ), str(product[4]), str(product[9]), str(product[11])
+    for row in pd.read_csv(file.name, sep=";").values:
+        yield pystore.Ozon.build_sale(list(map(str, row)))
 
 
 def add_product(product: database.Database.Product) -> None:
@@ -112,13 +75,8 @@ def add_sales(store: str) -> Generator[str]:
     database.db.save()
 
 
-def webopen(store: str, article: str) -> None:
-    if store == "wb":
-        webbrowser.open(f"https://www.wildberries.ru/catalog/{article}/detail.aspx")
-    elif store == "ozon":
-        webbrowser.open(f"https://www.ozon.ru/product/{article}/")
-    else:
-        raise NotImplemented(f"cannot open webpage for '{store}' store")
+def webopen(name: str, id: str) -> None:
+    webbrowser.open(pystore.get_store(name)[0].link(id))
 
 
 def appopen(filename: str) -> None:
