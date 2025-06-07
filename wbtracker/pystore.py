@@ -53,14 +53,14 @@ class Ozon(Store):
                 {
                     "store": cls.name,
                     "sticker": row[0],
-                    "id": row[10],
+                    "id": row[11],
                     "date": row[5],
-                    "price": int(float(row[7])),
+                    "price": int(float(row[8])),
                 }
             ),
             row[4],
-            row[9],
-            row[11],
+            row[10],
+            row[12],
         )
 
     @classmethod
